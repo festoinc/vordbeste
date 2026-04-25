@@ -32,7 +32,7 @@ export default function TalkPage({ config, models, db, onBack, onModelChange }) 
     setReadOnly(false);
     setMessages([{
       role: 'assistant',
-      content: `You're connected to <strong>${db.label}</strong>. Ask me anything in plain English — like "show me the top customers" or "how many orders came in this week".`
+      content: `You're connected to **${db.label}**. Ask me anything in plain English — like "show me the top customers" or "how many orders came in this week".`
     }]);
   }
 
@@ -91,11 +91,20 @@ export default function TalkPage({ config, models, db, onBack, onModelChange }) 
           }
 
           if (event.type === 'print_result') {
-            const snapshot = { text: event.text, sql: event.sql, rows: event.rows };
+            const snapshot = { sql: event.sql, rows: event.rows };
             assistantText = '';
             setMessages(m => {
-              const filtered = m.filter(msg => !(msg.role === 'assistant' && msg.streaming));
-              return [...filtered, { role: 'assistant', type: 'result', ...snapshot }];
+              const finalized = m
+                .map(msg => {
+                  if (msg.role === 'assistant' && msg.streaming) {
+                    const trimmed = (msg.content || '').trim();
+                    if (!trimmed) return null;
+                    return { role: 'assistant', content: msg.content };
+                  }
+                  return msg;
+                })
+                .filter(Boolean);
+              return [...finalized, { role: 'assistant', type: 'result', ...snapshot }];
             });
           }
 

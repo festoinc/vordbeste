@@ -14,15 +14,27 @@ function parseMessage(text) {
   return { text, clarification: null };
 }
 
+function renderMarkdown(text) {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped
+    .replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?]|$)/g, '$1<em>$2</em>')
+    .replace(/\n/g, '<br/>');
+}
+
 function BotMessage({ content, onChipSelect, chipsDisabled }) {
   const { text, clarification } = parseMessage(content);
 
   return (
     <div className="msg bot">
       <div className="msg-av bot-av">🤖</div>
-      <div style={{ maxWidth: '72%' }}>
+      <div className="msg-content">
         {text && (
-          <div className="bubble" dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br/>') }} />
+          <div className="bubble" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />
         )}
         {clarification && (
           <ClarificationWidget
@@ -170,12 +182,14 @@ export default function ChatWindow({ messages, thinking, onChipSelect, chipsDisa
           return (
             <div key={i} className="msg user">
               <div className="msg-av user-av">U</div>
-              <div className="bubble">{m.content}</div>
+              <div className="msg-content">
+                <div className="bubble">{m.content}</div>
+              </div>
             </div>
           );
         }
         if (m.type === 'result') {
-          return <ResultCard key={i} sql={m.sql} rows={m.rows} text={m.text} />;
+          return <ResultCard key={i} sql={m.sql} rows={m.rows} />;
         }
         if (m.type === 'write_warning') {
           return (
@@ -197,9 +211,11 @@ export default function ChatWindow({ messages, thinking, onChipSelect, chipsDisa
       {thinking && (
         <div className="msg bot">
           <div className="msg-av bot-av">🤖</div>
-          <div className="bubble">
-            <div className="thinking">
-              <div className="thinking-dot"/><div className="thinking-dot"/><div className="thinking-dot"/>
+          <div className="msg-content">
+            <div className="bubble" style={{ width: 'auto' }}>
+              <div className="thinking">
+                <div className="thinking-dot"/><div className="thinking-dot"/><div className="thinking-dot"/>
+              </div>
             </div>
           </div>
         </div>

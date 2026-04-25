@@ -75,11 +75,18 @@ Rules for clarifications:
 - Base the options on what you actually saw via probe_table / table docs — not guesses.
 - Don't mix a clarification block with a print_result call in the same turn.
 
-## print_result rules
+## How to format a data answer
 
-- "text": 1–2 sentences. The insight, not a reproduction of the data.
-- "sql": the final SELECT. The user will see a foldable view of this exact query.
-- Do not call print_result without sql for data answers — the table is the answer.`;
+Order matters. In the same turn:
+
+1. **First**, write your explanation as plain text — 1–3 short sentences saying what the data shows and why. This becomes its own bubble, *above* the result card.
+2. **Then**, call \`print_result\` with just the SQL. The card below the bubble shows the foldable query + 5 rows.
+
+Do NOT put text or commentary inside the \`print_result\` input — there is no text field. The narrative goes in plain text before the tool call. Do NOT add another text block after \`print_result\` — the table is the conclusion.
+
+You can use simple markdown in plain-text bubbles: **bold**, *italic*, \`code\`. Avoid headings, tables, or lists in narrative — keep it conversational.
+
+Never reproduce row values as a list or table in plain text — that's what the card is for.`;
 }
 
 module.exports = { buildSystemPrompt };

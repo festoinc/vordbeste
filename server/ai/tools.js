@@ -37,14 +37,13 @@ const LIST_TABLES_TOOL = {
 
 const PRINT_RESULT_TOOL = {
   name: 'print_result',
-  description: 'Display a response to the user. Use this for EVERY response that contains data, insights, or conclusions — never write free text for those. The result appears as a formatted card with your message and an optional data table.',
+  description: 'Execute a SELECT query and display the result as a card with foldable SQL and a 5-row preview. ALWAYS write your explanation as plain text BEFORE calling this tool — never put narrative or commentary inside the tool input. The card is purely the data view.',
   input_schema: {
     type: 'object',
     properties: {
-      text: { type: 'string', description: 'Your message or insight for the user. Be concise — one or two sentences.' },
-      sql: { type: 'string', description: 'A SELECT query to execute and display as a table alongside your message. Optional — omit if no data is needed.' },
+      sql: { type: 'string', description: 'The SELECT query to execute and show.' },
     },
-    required: ['text'],
+    required: ['sql'],
   },
 };
 
@@ -117,24 +116,21 @@ async function executeTool(toolName, toolInput, context) {
     }
 
     case 'print_result': {
-      const { text, sql } = toolInput;
+      const { sql } = toolInput;
       if (!sql) {
-        emit({ type: 'print_result', text, sql: null, rows: null });
-        return { success: true };
+        return { error: 'print_result requires a SELECT query in "sql".' };
       }
       const check = checkSelectOnly(sql);
       if (!check.safe) {
-        emit({ type: 'print_result', text: `⚠️ ${check.keyword} operations are not allowed — this app is read-only.`, sql: null, rows: null });
-        return { error: `Blocked: ${check.keyword} is not allowed.` };
+        return { error: `Blocked: ${check.keyword} is not allowed — this app is read-only.` };
       }
       const safeSql = enforceLimit(sql);
       try {
         const result = await dbDriver.runSelect(slug, safeSql);
-        emit({ type: 'print_result', text, sql: safeSql, rows: result.rows });
+        emit({ type: 'print_result', sql: safeSql, rows: result.rows });
         return { success: true, rowCount: result.rowCount };
       } catch (err) {
         const msg = friendlyDbError(err);
-        emit({ type: 'print_result', text: msg, sql: safeSql, rows: null });
         return { error: msg };
       }
     }

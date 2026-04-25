@@ -57,7 +57,7 @@ function downloadAs(rows, format) {
   URL.revokeObjectURL(url);
 }
 
-export default function ResultCard({ sql, rows, text }) {
+export default function ResultCard({ sql, rows }) {
   const [sqlOpen, setSqlOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(null);
@@ -72,12 +72,7 @@ export default function ResultCard({ sql, rows, text }) {
     return (
       <div className="msg bot">
         <div className="msg-av bot-av">🤖</div>
-        <div className="result-card">
-          {text && (
-            <div style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)', lineHeight: 1.6, borderBottom: sql ? '1px solid var(--border)' : 'none' }}>
-              {text}
-            </div>
-          )}
+        <div className="msg-content"><div className="result-card">
           {sql && (
             <>
               <div className="result-card-head" onClick={() => setSqlOpen(v => !v)}>
@@ -89,7 +84,7 @@ export default function ResultCard({ sql, rows, text }) {
               <div className="result-foot">No rows returned</div>
             </>
           )}
-        </div>
+        </div></div>
       </div>
     );
   }
@@ -106,12 +101,7 @@ export default function ResultCard({ sql, rows, text }) {
   return (
     <div className="msg bot">
       <div className="msg-av bot-av">🤖</div>
-      <div className="result-card">
-        {text && (
-          <div style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)', lineHeight: 1.6, borderBottom: '1px solid var(--border)' }}>
-            {text}
-          </div>
-        )}
+      <div className="msg-content"><div className="result-card">
         {sql && (
           <div className="result-card-head" onClick={() => setSqlOpen(v => !v)}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent)' }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -163,7 +153,7 @@ export default function ResultCard({ sql, rows, text }) {
             <button className="copy-btn" onClick={() => handleCopy('md')}>{copied === 'md' ? '✓' : 'Copy MD'}</button>
           </div>
         </div>
-      </div>
+      </div></div>
     </div>
   );
 }
