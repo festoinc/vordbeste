@@ -28,8 +28,38 @@ function copyAs(rows, format) {
   }
 }
 
+const PREVIEW_ROWS = 5;
+const MAX_INLINE_ROWS = 100;
+
+function downloadAs(rows, format) {
+  if (!rows || rows.length === 0) return;
+  const cols = Object.keys(rows[0]);
+  let mime, ext, content;
+  if (format === 'csv') {
+    mime = 'text/csv';
+    ext = 'csv';
+    content = [cols.join(','), ...rows.map(r => cols.map(c => `"${String(r[c] ?? '').replace(/"/g, '""')}"`).join(','))].join('\n');
+  } else if (format === 'json') {
+    mime = 'application/json';
+    ext = 'json';
+    content = JSON.stringify(rows, null, 2);
+  } else {
+    return;
+  }
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `vordbeste-result-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function ResultCard({ sql, rows, text }) {
   const [sqlOpen, setSqlOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(null);
 
   const handleCopy = (format) => {
@@ -65,6 +95,13 @@ export default function ResultCard({ sql, rows, text }) {
   }
 
   const cols = Object.keys(rows[0]);
+  const total = rows.length;
+  const tooBigToExpand = total > MAX_INLINE_ROWS;
+  const showCount = expanded
+    ? Math.min(total, MAX_INLINE_ROWS)
+    : Math.min(total, PREVIEW_ROWS);
+  const visibleRows = rows.slice(0, showCount);
+  const canExpand = total > PREVIEW_ROWS && !tooBigToExpand;
 
   return (
     <div className="msg bot">
@@ -94,7 +131,7 @@ export default function ResultCard({ sql, rows, text }) {
               <tr>{cols.map(c => <th key={c}>{c}</th>)}</tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
+              {visibleRows.map((row, i) => (
                 <tr key={i}>
                   {cols.map(c => <td key={c} title={String(row[c] ?? '')}>{String(row[c] ?? '')}</td>)}
                 </tr>
@@ -102,13 +139,28 @@ export default function ResultCard({ sql, rows, text }) {
             </tbody>
           </table>
         </div>
+        {(canExpand || tooBigToExpand) && (
+          <div className="result-expander">
+            {canExpand && (
+              <button className="expander-btn" onClick={() => setExpanded(v => !v)}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.18s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                {expanded ? `Collapse to ${PREVIEW_ROWS} rows` : `Show all ${total} rows`}
+              </button>
+            )}
+            {tooBigToExpand && (
+              <div className="expander-note">
+                Showing first {PREVIEW_ROWS} of {total} rows — download CSV or JSON to see them all.
+              </div>
+            )}
+          </div>
+        )}
         <div className="result-foot">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          {rows.length} row{rows.length !== 1 ? 's' : ''}
+          {total} row{total !== 1 ? 's' : ''}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
-            <button className="copy-btn" onClick={() => handleCopy('csv')}>{copied === 'csv' ? '✓' : 'CSV'}</button>
-            <button className="copy-btn" onClick={() => handleCopy('json')}>{copied === 'json' ? '✓' : 'JSON'}</button>
-            <button className="copy-btn" onClick={() => handleCopy('md')}>{copied === 'md' ? '✓' : 'Markdown'}</button>
+            <button className="copy-btn" onClick={() => downloadAs(rows, 'csv')}>Download CSV</button>
+            <button className="copy-btn" onClick={() => downloadAs(rows, 'json')}>Download JSON</button>
+            <button className="copy-btn" onClick={() => handleCopy('md')}>{copied === 'md' ? '✓' : 'Copy MD'}</button>
           </div>
         </div>
       </div>

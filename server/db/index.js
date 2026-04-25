@@ -45,6 +45,18 @@ async function runDescribe(slug, sql) {
   return entry.driver.runDescribe(entry.conn, sql);
 }
 
+const IDENT_RE = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
+
+async function probeTable(slug, tableName, limit = 10) {
+  const entry = connections.get(slug);
+  if (!entry) throw new Error('Not connected to database. Please connect first.');
+  if (!IDENT_RE.test(tableName)) throw new Error(`Invalid table name: ${tableName}`);
+  const safeLimit = Math.min(Math.max(1, Number(limit) || 10), 50);
+  const quoted = entry.type === 'mysql' ? `\`${tableName}\`` : `"${tableName}"`;
+  const sql = `SELECT * FROM ${quoted} LIMIT ${safeLimit}`;
+  return entry.driver.runSelect(entry.conn, sql);
+}
+
 async function introspectSchema(slug) {
   const entry = connections.get(slug);
   if (!entry) throw new Error('Not connected to database.');
@@ -57,4 +69,4 @@ async function testConnection(creds) {
   await driver.disconnect(conn);
 }
 
-module.exports = { connect, disconnect, getConnection, runSelect, runDescribe, introspectSchema, testConnection };
+module.exports = { connect, disconnect, getConnection, runSelect, runDescribe, probeTable, introspectSchema, testConnection };

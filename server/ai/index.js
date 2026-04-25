@@ -8,6 +8,7 @@ const tools = require('./tools');
 const ALL_TOOLS = [
   tools.LIST_TABLES_TOOL,
   tools.PRINT_RESULT_TOOL,
+  tools.PROBE_TABLE_TOOL,
   tools.RUN_DESCRIBE_TOOL,
   tools.UPDATE_TABLE_MD_TOOL,
   tools.NAME_CHAT_HISTORY_TOOL,

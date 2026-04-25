@@ -258,6 +258,66 @@ body { background: var(--bg); color: var(--text); overflow: hidden; }
 .chip.selected { background: var(--accent); color: white; border-color: var(--accent); }
 .chip:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Multi-select clarification */
+.clarification-multi { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.clarification-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.check-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 14px 7px 10px; border-radius: 99px;
+  border: 1.5px solid var(--accent-mid); background: var(--accent-light);
+  color: var(--accent-text); font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; user-select: none;
+}
+.check-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.check-chip .check-box {
+  width: 16px; height: 16px; border-radius: 4px;
+  border: 1.5px solid var(--accent-mid); background: white;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: white; flex-shrink: 0; transition: all 0.15s;
+}
+.check-chip:hover { border-color: var(--accent); }
+.check-chip.on { background: var(--accent); color: white; border-color: var(--accent); }
+.check-chip.on .check-box { background: var(--accent); border-color: white; }
+.check-chip.disabled { opacity: 0.5; cursor: not-allowed; }
+.check-chip.disabled:hover { border-color: var(--accent-mid); }
+
+/* Free-text clarification */
+.clarification-text { margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.clarification-input {
+  flex: 1; min-width: 200px; max-width: 360px;
+  padding: 8px 12px; border-radius: 8px;
+  border: 1.5px solid var(--border2); background: var(--surface);
+  font-family: var(--sans); font-size: 13px; color: var(--text); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.clarification-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.clarification-input:disabled { opacity: 0.6; }
+
+/* Continue button (multi + text clarifications) */
+.continue-btn {
+  padding: 7px 16px; border-radius: 99px;
+  border: 1.5px solid var(--accent); background: var(--accent);
+  color: white; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; font-family: var(--sans);
+}
+.continue-btn:hover:not(:disabled) { filter: brightness(0.95); }
+.continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Result-card row expander */
+.result-expander {
+  padding: 8px 16px; border-top: 1px solid var(--border);
+  background: var(--surface); display: flex; align-items: center; gap: 12px;
+}
+.expander-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 99px;
+  border: 1.5px solid var(--accent-mid); background: var(--accent-light);
+  color: var(--accent-text); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; font-family: var(--sans);
+}
+.expander-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+.expander-note { font-size: 12px; color: var(--text3); font-style: italic; }
+
 .chat-foot {
   padding: 16px 24px; background: var(--surface); border-top: 1px solid var(--border);
   display: flex; gap: 10px; align-items: flex-end;

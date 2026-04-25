@@ -48,6 +48,18 @@ const PRINT_RESULT_TOOL = {
   },
 };
 
+const PROBE_TABLE_TOOL = {
+  name: 'probe_table',
+  description: 'Silently fetch up to 10 sample rows from a table to inspect real values and shape (e.g. what statuses exist, date formats, enum-like columns). Results are visible to you only — never shown to the user. Use this during exploration before writing the final query, especially when a column might have a constrained set of values worth clarifying.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      table_name: { type: 'string', description: 'Exact table name to sample from' },
+    },
+    required: ['table_name'],
+  },
+};
+
 const RUN_DESCRIBE_TOOL = {
   name: 'run_describe',
   description: 'Run a DESCRIBE or information_schema query to inspect table structure.',
@@ -131,6 +143,16 @@ async function executeTool(toolName, toolInput, context) {
       const { sql } = toolInput;
       try {
         const result = await dbDriver.runDescribe(slug, sql);
+        return { rows: result.rows, rowCount: result.rowCount };
+      } catch (err) {
+        return { error: friendlyDbError(err) };
+      }
+    }
+
+    case 'probe_table': {
+      const { table_name } = toolInput;
+      try {
+        const result = await dbDriver.probeTable(slug, table_name, 10);
         return { rows: result.rows, rowCount: result.rowCount };
       } catch (err) {
         return { error: friendlyDbError(err) };
@@ -243,6 +265,7 @@ module.exports = {
   CONNECT_DB_TOOL,
   LIST_TABLES_TOOL,
   PRINT_RESULT_TOOL,
+  PROBE_TABLE_TOOL,
   RUN_DESCRIBE_TOOL,
   UPDATE_TABLE_MD_TOOL,
   NAME_CHAT_HISTORY_TOOL,

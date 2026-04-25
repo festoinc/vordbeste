@@ -25,20 +25,125 @@ function BotMessage({ content, onChipSelect, chipsDisabled }) {
           <div className="bubble" dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br/>') }} />
         )}
         {clarification && (
-          <div className="clarification-wrap">
-            {clarification.options.map((opt, i) => (
-              <button
-                key={i}
-                className="chip"
-                disabled={chipsDisabled}
-                onClick={() => onChipSelect(opt)}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
+          <ClarificationWidget
+            data={clarification}
+            disabled={chipsDisabled}
+            onSubmit={onChipSelect}
+          />
         )}
       </div>
+    </div>
+  );
+}
+
+function ClarificationWidget({ data, disabled, onSubmit }) {
+  const type = data.type || (Array.isArray(data.options) ? 'single' : 'text');
+
+  if (type === 'multi') return <MultiSelectClarification data={data} disabled={disabled} onSubmit={onSubmit} />;
+  if (type === 'text') return <TextClarification data={data} disabled={disabled} onSubmit={onSubmit} />;
+  return <SingleSelectClarification data={data} disabled={disabled} onSubmit={onSubmit} />;
+}
+
+function SingleSelectClarification({ data, disabled, onSubmit }) {
+  return (
+    <div className="clarification-wrap">
+      {(data.options || []).map((opt, i) => (
+        <button
+          key={i}
+          className="chip"
+          disabled={disabled}
+          onClick={() => onSubmit(opt)}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MultiSelectClarification({ data, disabled, onSubmit }) {
+  const [picked, setPicked] = useState(() => new Set());
+  const [submitted, setSubmitted] = useState(false);
+  const options = data.options || [];
+
+  const toggle = (opt) => {
+    setPicked(prev => {
+      const next = new Set(prev);
+      if (next.has(opt)) next.delete(opt); else next.add(opt);
+      return next;
+    });
+  };
+
+  const submit = () => {
+    if (picked.size === 0 || disabled || submitted) return;
+    setSubmitted(true);
+    const ordered = options.filter(o => picked.has(o));
+    onSubmit(ordered.join(', '));
+  };
+
+  const isDisabled = disabled || submitted;
+
+  return (
+    <div className="clarification-multi">
+      <div className="clarification-options">
+        {options.map((opt, i) => (
+          <label key={i} className={`check-chip ${picked.has(opt) ? 'on' : ''} ${isDisabled ? 'disabled' : ''}`}>
+            <input
+              type="checkbox"
+              checked={picked.has(opt)}
+              disabled={isDisabled}
+              onChange={() => toggle(opt)}
+            />
+            <span className="check-box">
+              {picked.has(opt) && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
+              )}
+            </span>
+            <span>{opt}</span>
+          </label>
+        ))}
+      </div>
+      <button
+        className="continue-btn"
+        disabled={isDisabled || picked.size === 0}
+        onClick={submit}
+      >
+        Continue
+      </button>
+    </div>
+  );
+}
+
+function TextClarification({ data, disabled, onSubmit }) {
+  const [value, setValue] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const isDisabled = disabled || submitted;
+
+  const submit = () => {
+    const trimmed = value.trim();
+    if (!trimmed || isDisabled) return;
+    setSubmitted(true);
+    onSubmit(trimmed);
+  };
+
+  return (
+    <div className="clarification-text">
+      <input
+        className="clarification-input"
+        type="text"
+        value={value}
+        placeholder={data.placeholder || 'Your answer'}
+        disabled={isDisabled}
+        onChange={e => setValue(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }}
+      />
+      <button
+        className="continue-btn"
+        disabled={isDisabled || !value.trim()}
+        onClick={submit}
+      >
+        Continue
+      </button>
     </div>
   );
 }
