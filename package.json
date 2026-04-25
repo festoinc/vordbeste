@@ -1,0 +1,40 @@
+{
+  "name": "vordbeste",
+  "version": "0.1.0",
+  "description": "Talk to your database in plain English",
+  "bin": {
+    "vordbeste": "./bin/vordbeste.js"
+  },
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"node server/index.js\" \"vite\"",
+    "build": "vite build",
+    "start": "node bin/vordbeste.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.11.5",
+    "open": "^10.1.0",
+    "openai": "^4.85.2",
+    "pg": "^8.13.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^6.1.0"
+  },
+  "files": [
+    "bin/",
+    "server/",
+    "dist/"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

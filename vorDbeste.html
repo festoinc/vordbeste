@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vorDbeste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface2: #f9fafb;
+  --border: #e8eaf0;
+  --border2: #d4d8e8;
+  --text: #0a2540;
+  --text2: #4f5e78;
+  --text3: #9aa3b8;
+  --accent: oklch(0.52 0.22 275);
+  --accent-light: oklch(0.52 0.22 275 / 0.09);
+  --accent-mid: oklch(0.52 0.22 275 / 0.18);
+  --accent-text: oklch(0.45 0.22 275);
+  --green: oklch(0.58 0.18 155);
+  --green-light: oklch(0.58 0.18 155 / 0.1);
+  --amber: oklch(0.68 0.18 80);
+  --amber-light: oklch(0.68 0.18 80 / 0.12);
+  --red: oklch(0.58 0.2 25);
+  --red-light: oklch(0.58 0.2 25 / 0.1);
+  --sans: 'Plus Jakarta Sans', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 14px;
+  --shadow-sm: 0 1px 3px oklch(0.52 0.22 275 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow: 0 4px 16px oklch(0 0 0 / 0.07), 0 1px 3px oklch(0 0 0 / 0.04);
+  --shadow-lg: 0 16px 48px oklch(0 0 0 / 0.1), 0 4px 12px oklch(0 0 0 / 0.06);
+}
+html, body, #root { height: 100%; width: 100%; overflow: hidden; font-family: var(--sans); }
+body { background: var(--bg); color: var(--text); }
+
+.page { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.page-enter { animation: pageIn 0.32s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes pageIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 99px; }
+
+/* ── Topbar ── */
+.topbar {
+  height: 56px; min-height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  z-index: 10; user-select: none;
+}
+.logo {
+  font-size: 18px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 8px; letter-spacing: -0.02em;
+}
+.logo-mark {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--accent); display: flex; align-items: center; justify-content: center;
+}
+.logo-mark svg { width: 16px; height: 16px; }
+.logo span { color: var(--accent); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.badge {
+  font-size: 12px; font-weight: 500; padding: 4px 12px;
+  border-radius: 99px; background: var(--accent-light);
+  color: var(--accent-text); border: 1px solid var(--accent-mid);
+}
+.badge.green { background: var(--green-light); color: var(--green); border-color: oklch(0.58 0.18 155 / 0.25); }
+.badge.neutral { background: var(--surface2); color: var(--text2); border-color: var(--border2); }
+.avatar {
+  width: 32px; height: 32px; border-radius: 99px;
+  background: linear-gradient(135deg, oklch(0.72 0.18 275), oklch(0.52 0.22 275));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: white;
+}
+
+
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 99px;
+    background: var(--accent); color: white; font-size: 11px; font-weight: 700;
+    margin-right: 8px; flex-shrink: 0;
+  }
+  .step-block { transition: opacity 0.2s; }
+  .step-disabled { opacity: 0.4; pointer-events: none; }
+  .provider-card {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 14px 14px; border-radius: 12px;
+    border: 1.5px solid var(--border2); background: var(--surface);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .provider-card:hover { border-color: var(--accent-mid); background: var(--accent-light); }
+  .provider-card.selected { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 3px var(--accent-light); }
+  .model-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px; border-radius: 10px;
+    border: 1.5px solid var(--border); background: var(--surface);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .model-row:hover { border-color: var(--accent-mid); background: var(--accent-light); }
+  .model-row.selected { border-color: var(--accent); background: var(--accent-light); }
+  .model-row.row-disabled { pointer-events: none; }
+  /* ── Page 1: Setup ── */
+.setup-bg {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #f0f2ff 0%, #f6f7fb 40%, #fff8f5 100%);
+  padding: 24px;
+}
+.setup-card {
+  width: 480px; background: var(--surface);
+  border-radius: 20px; padding: 44px 44px 40px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+}
+.setup-eyebrow {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-light); border: 1px solid var(--accent-mid);
+  border-radius: 99px; padding: 4px 12px;
+  font-size: 12px; font-weight: 600; color: var(--accent-text);
+  margin-bottom: 18px; letter-spacing: 0.02em;
+}
+.setup-title { font-size: 26px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 8px; }
+.setup-sub { font-size: 14px; color: var(--text2); font-weight: 400; margin-bottom: 36px; line-height: 1.5; }
+
+.field-group { margin-bottom: 22px; }
+.field-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px; display: block; }
+.field-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
+.field-hint a { color: var(--accent-text); text-decoration: none; }
+.input-wrap { position: relative; }
+.input {
+  width: 100%; padding: 13px 48px 13px 16px;
+  border: 1.5px solid var(--border2); border-radius: 10px;
+  font-family: var(--sans); font-size: 14px; color: var(--text);
+  background: var(--surface); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-light); }
+.input::placeholder { color: var(--text3); }
+.input-icon {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--text3); cursor: pointer; padding: 4px; border-radius: 6px;
+  background: none; border: none; display: flex; transition: color 0.15s;
+}
+.input-icon:hover { color: var(--text2); }
+.select {
+  width: 100%; padding: 13px 48px 13px 16px;
+  border: 1.5px solid var(--border2); border-radius: 10px;
+  font-family: var(--sans); font-size: 14px; color: var(--text);
+  background: var(--surface); outline: none; cursor: pointer; appearance: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%239aa3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+.select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-light); }
+.select option { color: var(--text); }
+.model-info {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+  padding: 10px 14px; border-radius: 8px; background: var(--surface2);
+  border: 1px solid var(--border); font-size: 12.5px; color: var(--text2);
+}
+.btn-primary {
+  width: 100%; padding: 15px; margin-top: 6px;
+  background: var(--accent); border: none; border-radius: 10px;
+  font-family: var(--sans); font-size: 15px; font-weight: 600; color: white;
+  cursor: pointer; letter-spacing: -0.01em;
+  box-shadow: 0 4px 16px oklch(0.52 0.22 275 / 0.35);
+  transition: transform 0.1s, opacity 0.15s, box-shadow 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+.btn-primary:not(:disabled):hover { opacity: 0.92; box-shadow: 0 6px 24px oklch(0.52 0.22 275 / 0.42); }
+.btn-primary:not(:disabled):active { transform: scale(0.98); }
+.setup-divider { text-align: center; font-size: 12px; color: var(--text3); margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.setup-divider a { color: var(--accent-text); text-decoration: none; font-weight: 500; }
+
+/* ── Page 2: DB View ── */
+.split-body { flex: 1; display: flex; overflow: hidden; }
+.left-panel {
+  width: 360px; min-width: 300px;
+  background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.panel-head {
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.panel-head-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+.panel-head-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text2); transition: all 0.15s;
+}
+.icon-btn:hover { background: var(--accent-light); color: var(--accent); border-color: var(--accent-mid); }
+
+/* DB cards */
+.db-scroll { flex: 1; overflow-y: auto; padding: 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+.db-card {
+  padding: 16px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  cursor: pointer; transition: all 0.18s;
+  display: flex; align-items: center; gap: 14px;
+}
+.db-card:hover { border-color: var(--accent-mid); box-shadow: 0 4px 16px oklch(0.52 0.22 275 / 0.08); transform: translateY(-1px); }
+.db-card.selected { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 4px 16px oklch(0.52 0.22 275 / 0.12); }
+.db-card-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+  background: var(--surface2); border: 1px solid var(--border);
+}
+.db-card.selected .db-card-icon { background: white; }
+.db-card-body { flex: 1; min-width: 0; }
+.db-card-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.db-card-meta { font-size: 12px; color: var(--text2); margin-top: 3px; }
+.db-card-tag {
+  display: inline-block; font-size: 11px; font-weight: 500;
+  padding: 2px 8px; border-radius: 6px; margin-top: 5px;
+}
+.tag-pg { background: oklch(0.55 0.18 250 / 0.1); color: oklch(0.45 0.18 250); }
+.tag-mysql { background: var(--amber-light); color: var(--amber); }
+.tag-sqlite { background: var(--green-light); color: var(--green); }
+.tag-mongo { background: var(--green-light); color: var(--green); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.online { background: var(--green); box-shadow: 0 0 0 3px var(--green-light); }
+.status-dot.offline { background: var(--text3); }
+.db-open-hint {
+  margin: 0 14px 14px; padding: 10px 14px; border-radius: 10px;
+  background: oklch(0.52 0.22 275 / 0.06); border: 1px solid var(--accent-mid);
+  font-size: 12px; color: var(--accent-text); text-align: center; font-weight: 500;
+}
+
+/* Chat panel */
+.chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.chat-top {
+  padding: 16px 24px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px;
+}
+.bot-avi {
+  width: 40px; height: 40px; border-radius: 12px;
+  background: linear-gradient(135deg, oklch(0.72 0.18 275), oklch(0.52 0.22 275));
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  flex-shrink: 0;
+}
+.chat-label { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; }
+.chat-label-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.msgs { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+.msg { display: flex; gap: 12px; align-items: flex-start; animation: msgIn 0.22s ease both; max-width: 100%; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg.user { flex-direction: row-reverse; }
+.msg-av {
+  width: 32px; height: 32px; border-radius: 99px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.msg-av.bot-av {
+  background: linear-gradient(135deg, oklch(0.72 0.18 275), oklch(0.52 0.22 275));
+}
+.msg-av.user-av { background: var(--surface); border: 1.5px solid var(--border); font-size: 13px; font-weight: 600; color: var(--text2); }
+.bubble {
+  max-width: 72%; padding: 13px 17px; border-radius: 16px;
+  font-size: 14px; line-height: 1.65; font-weight: 400;
+}
+.msg.bot .bubble { background: var(--surface); border: 1.5px solid var(--border); border-top-left-radius: 4px; color: var(--text); box-shadow: var(--shadow-sm); }
+.msg.user .bubble { background: var(--accent); color: white; border-top-right-radius: 4px; box-shadow: 0 4px 14px oklch(0.52 0.22 275 / 0.3); }
+.bubble strong { font-weight: 600; }
+.thinking { display: flex; gap: 5px; align-items: center; padding: 4px 2px; }
+.thinking-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); animation: tdot 1.1s ease-in-out infinite; }
+.thinking-dot:nth-child(2) { animation-delay: 0.16s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.32s; }
+@keyframes tdot { 0%,60%,100% { transform: translateY(0); opacity: 0.35; } 30% { transform: translateY(-5px); opacity: 1; } }
+.chat-foot {
+  padding: 16px 24px; background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; gap: 10px; align-items: flex-end;
+}
+.chat-textarea {
+  flex: 1; resize: none; border: 1.5px solid var(--border2); border-radius: 12px;
+  background: var(--surface); font-family: var(--sans); font-size: 14px; color: var(--text);
+  padding: 11px 16px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 46px; max-height: 120px;
+}
+.chat-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.chat-textarea::placeholder { color: var(--text3); }
+.send-btn {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: var(--accent); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 12px oklch(0.52 0.22 275 / 0.3);
+  transition: opacity 0.15s, transform 0.1s; flex-shrink: 0;
+}
+.send-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+.send-btn:not(:disabled):hover { opacity: 0.87; }
+.send-btn:not(:disabled):active { transform: scale(0.94); }
+
+/* ── Page 3 ── */
+.three-body { flex: 1; display: flex; overflow: hidden; }
+.history-panel {
+  width: 250px; background: var(--surface); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.hist-list { flex: 1; overflow-y: auto; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; }
+.hist-item {
+  padding: 11px 12px; border-radius: 10px; cursor: pointer;
+  border: 1px solid transparent; transition: all 0.15s;
+}
+.hist-item:hover { background: var(--surface2); }
+.hist-item.active { background: var(--accent-light); border-color: var(--accent-mid); }
+.hist-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-item.active .hist-title { color: var(--accent-text); font-weight: 600; }
+.hist-time { font-size: 11px; color: var(--text3); margin-top: 3px; }
+.hist-db-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 6px;
+  background: var(--surface2); color: var(--text2); border: 1px solid var(--border);
+  margin-top: 5px;
+}
+.new-chat-row {
+  padding: 12px 12px; border-top: 1px solid var(--border);
+}
+.new-chat-btn {
+  width: 100%; padding: 10px 14px; border-radius: 10px;
+  border: 1.5px dashed var(--border2); background: transparent;
+  font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; display: flex; align-items: center; gap: 8px; justify-content: center;
+  transition: all 0.15s;
+}
+.new-chat-btn:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-light); }
+
+/* Center query chat */
+.query-chat { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.query-msgs { flex: 1; overflow-y: auto; padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+/* SQL result card */
+.result-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; overflow: hidden; box-shadow: var(--shadow-sm);
+  max-width: 90%;
+}
+.result-card-head {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  background: var(--surface2); display: flex; align-items: center; gap: 8px;
+}
+.result-card-head-label { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: 0.04em; text-transform: uppercase; }
+.sql-snippet { font-family: var(--mono); font-size: 12px; color: var(--accent-text); padding: 12px 16px; background: oklch(0.52 0.22 275 / 0.04); border-bottom: 1px solid var(--border); }
+.sql-kw { color: oklch(0.52 0.22 275); font-weight: 500; }
+.sql-str { color: var(--amber); }
+.result-table { width: 100%; border-collapse: collapse; }
+.result-table th { padding: 9px 14px; background: var(--surface2); color: var(--text2); font-size: 11.5px; font-weight: 600; text-align: left; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.04em; }
+.result-table td { padding: 9px 14px; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--border); }
+.result-table tr:last-child td { border-bottom: none; }
+.result-table tr:hover td { background: var(--surface2); }
+.result-foot { padding: 8px 16px; font-size: 12px; color: var(--text3); border-top: 1px solid var(--border); background: var(--surface2); display: flex; align-items: center; gap: 8px; }
+.copy-btn { margin-left: auto; font-size: 11.5px; font-weight: 500; color: var(--accent-text); cursor: pointer; background: none; border: none; font-family: var(--sans); transition: opacity 0.15s; }
+.copy-btn:hover { opacity: 0.7; }
+
+/* Right tables panel */
+.tables-panel {
+  width: 240px; background: var(--surface); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.tables-scroll { flex: 1; overflow-y: auto; padding: 10px 10px; display: flex; flex-direction: column; gap: 3px; }
+.table-row {
+  border-radius: 9px; border: 1px solid transparent; overflow: hidden;
+  cursor: pointer; transition: all 0.15s;
+}
+.table-row:hover { background: var(--surface2); }
+.table-row.open { border-color: var(--accent-mid); background: var(--accent-light); }
+.table-row-head {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+}
+.table-row-icon {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px;
+}
+.table-row.open .table-row-icon { background: white; }
+.table-row-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.table-row.open .table-row-name { color: var(--accent-text); font-weight: 600; }
+.table-row-count { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.chevron { margin-left: auto; color: var(--text3); transition: transform 0.15s; flex-shrink: 0; }
+.table-row.open .chevron { transform: rotate(90deg); color: var(--accent); }
+.cols-list { padding: 4px 12px 10px 50px; display: flex; flex-direction: column; gap: 5px; }
+.col-row { display: flex; align-items: center; gap: 6px; }
+.col-type-badge { font-size: 10px; font-family: var(--mono); padding: 1px 6px; border-radius: 5px; background: var(--surface2); color: var(--text3); border: 1px solid var(--border); white-space: nowrap; }
+.col-name { font-size: 12px; color: var(--text2); font-weight: 500; }
+.pk-badge { font-size: 9.5px; font-weight: 600; color: var(--amber); background: var(--amber-light); padding: 1px 5px; border-radius: 4px; }
+
+/* DB chip in topbar */
+.db-chip {
+  display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+  border-radius: 99px; background: var(--surface2); border: 1px solid var(--border);
+  font-size: 13px; font-weight: 500; color: var(--text);
+}
+.db-chip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-light); }
+.back-btn {
+  display: flex; align-items: center; gap: 6px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text2); font-family: var(--sans); font-size: 13px; font-weight: 500;
+  padding: 6px 10px; border-radius: 8px; transition: all 0.15s;
+}
+.back-btn:hover { background: var(--surface2); color: var(--text); }
+
+/* section label */
+.section-label {
+  font-size: 10.5px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 8px 12px 4px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+// ── Data ────────────────────────────────────────────────────────────
+const AI_MODELS = [
+  { value: '', label: 'Choose an AI model…' },
+  { value: 'gpt-4o', label: 'GPT-4o  —  OpenAI', note: 'Best for complex queries and analysis' },
+  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo  —  OpenAI', note: 'Fast and cost-efficient' },
+  { value: 'claude-3-7', label: 'Claude 3.7 Sonnet  —  Anthropic', note: 'Great at understanding nuance' },
+  { value: 'claude-opus', label: 'Claude 3 Opus  —  Anthropic', note: 'Most powerful for reasoning' },
+  { value: 'gemini-1.5', label: 'Gemini 1.5 Pro  —  Google', note: 'Huge context window' },
+  { value: 'llama3', label: 'Llama 3.1 70B  —  Local', note: 'Runs on your machine, no data sent out' },
+];
+
+const MODEL_NOTES = {
+  'gpt-4o': { icon: '⚡', note: 'Best overall — great at complex database queries.' },
+  'gpt-4-turbo': { icon: '🚀', note: 'Fast and affordable for everyday use.' },
+  'claude-3-7': { icon: '🎯', note: 'Excellent at understanding plain-English questions.' },
+  'claude-opus': { icon: '🧠', note: 'Most powerful model for complex reasoning.' },
+  'gemini-1.5': { icon: '🔭', note: 'Supports very long and complex queries.' },
+  'llama3': { icon: '🔒', note: 'Runs locally — your data never leaves your machine.' },
+};
+
+const DATABASES = [
+  { id: 'pg-prod', name: 'Production Database', type: 'pg', emoji: '🐘', label: 'PostgreSQL', host: 'db.prod.internal', tables: 12, status: 'online' },
+  { id: 'pg-analytics', name: 'Analytics', type: 'pg', emoji: '📊', label: 'PostgreSQL', host: 'analytics.rds.aws.com', tables: 8, status: 'online' },
+  { id: 'mysql-store', name: 'Online Store', type: 'mysql', emoji: '🛒', label: 'MySQL', host: 'mysql.store.local', tables: 19, status: 'online' },
+  { id: 'sqlite-dev', name: 'Local Dev', type: 'sqlite', emoji: '💾', label: 'SQLite', host: 'Local file', tables: 5, status: 'online' },
+  { id: 'mongo-logs', name: 'Logs & Events', type: 'mongo', emoji: '📋', label: 'MongoDB', host: '10.0.1.55:27017', tables: 3, status: 'offline' },
+];
+
+const TABLES_DATA = {
+  'pg-prod': [
+    { name: 'users', cols: [{ name: 'id', type: 'uuid', pk: true }, { name: 'email', type: 'text' }, { name: 'created_at', type: 'timestamp' }, { name: 'role', type: 'text' }] },
+    { name: 'orders', cols: [{ name: 'id', type: 'int8', pk: true }, { name: 'user_id', type: 'uuid' }, { name: 'total', type: 'numeric' }, { name: 'status', type: 'text' }] },
+    { name: 'products', cols: [{ name: 'id', type: 'int8', pk: true }, { name: 'name', type: 'text' }, { name: 'price', type: 'numeric' }, { name: 'stock', type: 'int4' }] },
+    { name: 'sessions', cols: [{ name: 'id', type: 'uuid', pk: true }, { name: 'user_id', type: 'uuid' }, { name: 'expires', type: 'timestamp' }] },
+    { name: 'audit_log', cols: [{ name: 'id', type: 'int8', pk: true }, { name: 'action', type: 'text' }, { name: 'ts', type: 'timestamp' }] },
+  ],
+  'pg-analytics': [
+    { name: 'events', cols: [{ name: 'id', type: 'int8', pk: true }, { name: 'name', type: 'text' }, { name: 'user_id', type: 'uuid' }, { name: 'ts', type: 'timestamp' }] },
+    { name: 'funnels', cols: [{ name: 'id', type: 'int8', pk: true }, { name: 'step', type: 'text' }, { name: 'count', type: 'int4' }] },
+    { name: 'cohorts', cols: [{ name: 'id', type: 'int8', pk: true }, { name: 'week', type: 'date' }, { name: 'size', type: 'int4' }] },
+  ],
+  'mysql-store': [
+    { name: 'customers', cols: [{ name: 'id', type: 'int', pk: true }, { name: 'name', type: 'varchar' }, { name: 'email', type: 'varchar' }] },
+    { name: 'inventory', cols: [{ name: 'sku', type: 'varchar', pk: true }, { name: 'qty', type: 'int' }, { name: 'warehouse', type: 'varchar' }] },
+    { name: 'transactions', cols: [{ name: 'id', type: 'int', pk: true }, { name: 'amount', type: 'decimal' }, { name: 'ts', type: 'datetime' }] },
+  ],
+  'sqlite-dev': [
+    { name: 'test_users', cols: [{ name: 'id', type: 'integer', pk: true }, { name: 'name', type: 'text' }] },
+    { name: 'fixtures', cols: [{ name: 'id', type: 'integer', pk: true }, { name: 'data', type: 'blob' }] },
+  ],
+  'mongo-logs': [
+    { name: 'access_logs', cols: [] },
+    { name: 'error_logs', cols: [] },
+  ],
+};
+
+const HISTORY = [
+  { id: 'h1', title: 'Top customers by revenue', dbId: 'pg-prod', dbName: 'Production Database', time: '2 min ago' },
+  { id: 'h2', title: 'Pending orders this month', dbId: 'pg-prod', dbName: 'Production Database', time: '1 hour ago' },
+  { id: 'h3', title: 'Funnel drop-off analysis', dbId: 'pg-analytics', dbName: 'Analytics', time: 'Yesterday' },
+  { id: 'h4', title: 'Low stock items', dbId: 'mysql-store', dbName: 'Online Store', time: 'Yesterday' },
+  { id: 'h5', title: 'Failed logins last 24h', dbId: 'pg-prod', dbName: 'Production Database', time: '2 days ago' },
+];
+
+// ── Setup Page ───────────────────────────────────────────────────────
+const PROVIDERS = [
+  { id: 'openai',    label: 'OpenAI',    emoji: '🟢', desc: 'GPT-4o, GPT-4 Turbo and more',     placeholder: 'sk-••••••••••••••••••••••' },
+  { id: 'anthropic', label: 'Anthropic', emoji: '🟣', desc: 'Claude 3.7 Sonnet, Claude 3 Opus', placeholder: 'sk-ant-••••••••••••••••••' },
+  { id: 'ollama',    label: 'Ollama',    emoji: '🦙', desc: 'Local models — no key required',   placeholder: null },
+  { id: 'gemini',    label: 'Gemini',    emoji: '🔵', desc: 'Google Gemini 1.5 Pro & Flash',    placeholder: 'AIza••••••••••••••••••••' },
+];
+const PROVIDER_MODELS = {
+  openai:    [{ value: 'gpt-4o', label: 'GPT-4o' }, { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' }, { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' }],
+  anthropic: [{ value: 'claude-3-7', label: 'Claude 3.7 Sonnet' }, { value: 'claude-opus', label: 'Claude 3 Opus' }, { value: 'claude-haiku', label: 'Claude 3 Haiku' }],
+  ollama:    [{ value: 'llama3', label: 'Llama 3.1 70B' }, { value: 'mistral', label: 'Mistral 7B' }, { value: 'phi3', label: 'Phi-3 Mini' }],
+  gemini:    [{ value: 'gemini-1.5', label: 'Gemini 1.5 Pro' }, { value: 'gemini-flash', label: 'Gemini 1.5 Flash' }],
+};
+
+function SetupPage({ onConfirm }) {
+  const [provider, setProvider] = useState('');
+  const [token, setToken] = useState('');
+  const [model, setModel] = useState('');
+  const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const providerObj = PROVIDERS.find(p => p.id === provider);
+  const needsKey = provider && provider !== 'ollama';
+  const keyOk = !needsKey || token.length >= 6;
+  const canGo = provider && keyOk && model;
+  const models = provider ? PROVIDER_MODELS[provider] : [];
+
+  const pickProvider = (id) => { setProvider(id); setToken(''); setModel(''); };
+
+  const go = () => {
+    if (!canGo) return;
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onConfirm({ token, model, provider }); }, 1000);
+  };
+
+  return (
+    <div className="page page-enter" style={{ background: 'var(--bg)' }}>
+      <div className="topbar">
+        <div className="logo">
+          <div className="logo-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          vor<span>DB</span>este
+        </div>
+        <div className="topbar-right">
+          <span className="badge neutral">v0.3.1</span>
+          <span className="badge">Open source</span>
+        </div>
+      </div>
+
+      <div className="setup-bg">
+        <div className="setup-card" style={{ width: 520 }}>
+          <div className="setup-title">Connect your AI to your data</div>
+          <div className="setup-sub">Ask questions about your database in plain English — no SQL or coding needed.</div>
+
+          {/* Step 1 */}
+          <div className="field-group">
+            <label className="field-label"><span className="step-num">1</span> Choose your AI provider</label>
+            <select className="select" value={provider} onChange={e => pickProvider(e.target.value)}>
+              <option value="">Select a provider…</option>
+              {PROVIDERS.map(p => (
+                <option key={p.id} value={p.id}>{p.emoji}  {p.label} — {p.desc}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Step 2 */}
+          <div className={`field-group step-block ${!provider ? 'step-disabled' : ''}`}>
+            <label className="field-label"><span className="step-num">2</span> {provider === 'ollama' ? 'No API key needed' : 'Enter your API key'}</label>
+            {provider === 'ollama' ? (
+              <div className="model-info" style={{ background: 'var(--green-light)', borderColor: 'oklch(0.58 0.18 155 / 0.25)' }}>
+                <span style={{ fontSize: 16 }}>✅</span>
+                <span style={{ fontSize: 13, color: 'var(--green)' }}>Ollama runs locally — no API key required.</span>
+              </div>
+            ) : (
+              <>
+                <div className="input-wrap">
+                  <input className="input" type={show ? 'text' : 'password'} placeholder={providerObj?.placeholder ?? 'Enter your API key…'} value={token} onChange={e => setToken(e.target.value)} disabled={!provider} />
+                  <button className="input-icon" onClick={() => setShow(v => !v)} disabled={!provider}>
+                    {show
+                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    }
+                  </button>
+                </div>
+                <div className="field-hint">All data stored locally on your PC</div>
+              </>
+            )}
+          </div>
+
+          {/* Step 3 */}
+          <div className={`field-group step-block ${!keyOk ? 'step-disabled' : ''}`}>
+            <label className="field-label"><span className="step-num">3</span> Select a model</label>
+            <select className="select" value={model} onChange={e => setModel(e.target.value)} disabled={!keyOk}>
+              <option value="">{!provider ? 'Select a provider first…' : 'Choose a model…'}</option>
+              {models.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <button className="btn-primary" disabled={!canGo || loading} onClick={go}>
+            {loading
+              ? <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" style={{ animation: 'spin 0.7s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg> Connecting…</>
+              : <>Get started  →</>
+            }
+          </button>
+
+          <div className="setup-divider">
+            No account needed &nbsp;·&nbsp; <a href="#">GitHub ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Model Switcher ───────────────────────────────────────────────────
+function ModelSwitcher({ config, onModelChange }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <span
+        className="badge green"
+        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
+        onClick={() => setOpen(v => !v)}
+      >
+        ● {config.model}
+        <svg style={{ opacity: 0.6 }} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+          background: 'var(--surface)', border: '1.5px solid var(--border)',
+          borderRadius: 12, boxShadow: 'var(--shadow-lg)',
+          minWidth: 220, zIndex: 100, overflow: 'hidden', padding: '6px',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.07em', padding: '4px 8px 6px' }}>Switch model</div>
+          {Object.entries(PROVIDER_MODELS).map(([prov, models]) => (
+            <div key={prov}>
+              <div style={{ fontSize: 11, color: 'var(--text3)', padding: '4px 8px 2px', fontWeight: 600 }}>
+                {PROVIDERS.find(p => p.id === prov)?.label ?? prov}
+              </div>
+              {models.map(m => (
+                <div
+                  key={m.value}
+                  onClick={() => { onModelChange(m.value); setOpen(false); }}
+                  style={{
+                    padding: '8px 10px', borderRadius: 8, cursor: 'pointer',
+                    fontSize: 13, fontWeight: config.model === m.value ? 600 : 400,
+                    color: config.model === m.value ? 'var(--accent-text)' : 'var(--text)',
+                    background: config.model === m.value ? 'var(--accent-light)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    transition: 'background 0.12s',
+                  }}
+                  onMouseEnter={e => { if (config.model !== m.value) e.currentTarget.style.background = 'var(--surface2)'; }}
+                  onMouseLeave={e => { if (config.model !== m.value) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  {m.label}
+                  {config.model === m.value && <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" stroke="none"><path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2zm-1.5 14.5l7-7-1.4-1.4-5.6 5.6-2.6-2.6-1.4 1.4 4 4z"/></svg>}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── DB View Page ─────────────────────────────────────────────────────
+function DBViewPage({ config, onSelectDB, onModelChange }) {
+  const [sel, setSel] = useState(null);
+  const [msgs, setMsgs] = useState([
+    { role: 'bot', text: "Hi there! 👋 I can help you add and configure new database connections. Have a connection string or credentials ready? Let's get started!" },
+  ]);
+  const [input, setInput] = useState('');
+  const [thinking, setThinking] = useState(false);
+  const endRef = useRef(null);
+
+  useEffect(() => { if (endRef.current) endRef.current.scrollTop = endRef.current.scrollHeight; }, [msgs, thinking]);
+
+  const handleClick = (db) => {
+    setSel(db.id);
+  };
+
+  const send = () => {
+    if (!input.trim()) return;
+    const t = input.trim(); setInput('');
+    setMsgs(m => [...m, { role: 'user', text: t }]);
+    setThinking(true);
+    setTimeout(() => {
+      setThinking(false);
+      setMsgs(m => [...m, { role: 'bot', text: "Great question! Select a database on the left to get started, or I can help you add a new connection. What would you like to do?" }]);
+    }, 1100);
+  };
+
+  return (
+    <div className="page page-enter">
+      <div className="topbar">
+        <div className="logo">
+          <div className="logo-mark">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          vor<span>DB</span>este
+        </div>
+        <div className="topbar-right">
+          <ModelSwitcher config={config} onModelChange={onModelChange} />
+        </div>
+      </div>
+
+      <div className="split-body">
+        {/* Left */}
+        <div className="left-panel">
+          <div className="panel-head">
+            <div>
+              <div className="panel-head-title">Your Databases</div>
+              <div className="panel-head-sub">Click a database to explore it</div>
+            </div>
+
+          </div>
+          <div className="db-scroll">
+            {DATABASES.map(db => (
+              <div
+                key={db.id}
+                className={`db-card ${sel === db.id ? 'selected' : ''}`}
+                onClick={() => handleClick(db)}
+              >
+                <div className="db-card-icon">{db.emoji}</div>
+                <div className="db-card-body">
+                  <div className="db-card-name">{db.name}</div>
+                  <div className="db-card-meta">{db.tables} tables &nbsp;·&nbsp; {db.host}</div>
+                  <span className={`db-card-tag tag-${db.type}`}>{db.label}</span>
+                </div>
+                {db.status === 'online'
+                  ? <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      <div className="status-dot online"></div>
+                      {sel === db.id && (
+                        <button
+                          onClick={e => { e.stopPropagation(); onSelectDB(db); }}
+                          style={{ fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 7, background: 'var(--accent)', color: 'white', border: 'none', cursor: 'pointer', fontFamily: 'var(--sans)', whiteSpace: 'nowrap' }}
+                        >Open →</button>
+                      )}
+                    </div>
+                  : <div className="status-dot offline"></div>
+                }
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: Chat */}
+        <div className="chat-panel">
+          <div className="chat-top">
+            <div className="bot-avi">🤖</div>
+            <div>
+              <div className="chat-label">AI Assistant</div>
+              <div className="chat-label-sub">Use me to set up new connections · Powered by {config.model}</div>
+            </div>
+          </div>
+          <div className="msgs" ref={endRef}>
+            {msgs.map((m, i) => (
+              <div key={i} className={`msg ${m.role}`}>
+                <div className={`msg-av ${m.role === 'bot' ? 'bot-av' : 'user-av'}`}>
+                  {m.role === 'bot' ? '🤖' : 'A'}
+                </div>
+                <div className="bubble" {...(m.html ? { dangerouslySetInnerHTML: { __html: m.text } } : { children: m.text })} />
+              </div>
+            ))}
+            {thinking && (
+              <div className="msg bot">
+                <div className="msg-av bot-av">🤖</div>
+                <div className="bubble"><div className="thinking"><div className="thinking-dot"/><div className="thinking-dot"/><div className="thinking-dot"/></div></div>
+              </div>
+            )}
+          </div>
+          <div className="chat-foot">
+            <textarea className="chat-textarea" rows={1} placeholder="e.g. How do I connect a PostgreSQL database?" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
+            <button className="send-btn" disabled={!input.trim()} onClick={send}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Result Card ──────────────────────────────────────────────────────
+function ResultCard({ m }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }} className="msg bot">
+      <div className="msg-av bot-av">🤖</div>
+      <div className="result-card">
+        <div className="result-card-head" style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setOpen(v => !v)}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent)' }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span className="result-card-head-label">Query Result</span>
+          <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: 'var(--text3)', fontWeight: 400 }}>
+            <svg style={{ transition: 'transform 0.18s', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }} width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            {open ? 'Hide SQL' : 'View SQL'}
+          </span>
+        </div>
+        {open && (
+          <div className="sql-snippet">
+            {m.sql.split('\n').map((line, li) => (
+              <div key={li} dangerouslySetInnerHTML={{ __html: line.replace(/\b(SELECT|FROM|WHERE|JOIN|ON|GROUP BY|ORDER BY|LIMIT|AND|INTERVAL|DESC|ASC|SUM|COUNT|NOW|INNER|LEFT)\b/g, '<span class="sql-kw">$1</span>').replace(/'([^']*)'/g, "<span class='sql-str'>'$1'</span>") }} />
+            ))}
+          </div>
+        )}
+        <table className="result-table">
+          <thead><tr>{Object.keys(m.rows[0]).map(k => <th key={k}>{k}</th>)}</tr></thead>
+          <tbody>{m.rows.map((row, ri) => <tr key={ri}>{Object.values(row).map((v, vi) => <td key={vi}>{v}</td>)}</tr>)}</tbody>
+        </table>
+        <div className="result-foot">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          {m.rows.length} results
+          <button className="copy-btn">Copy as CSV</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Talk to DB Page ───────────────────────────────────────────────────
+function TalkPage({ config, db, onBack, onModelChange }) {
+  const [activeHist, setActiveHist] = useState('h1');
+  const [openTable, setOpenTable] = useState(null);
+  const [input, setInput] = useState('');
+  const [thinking, setThinking] = useState(false);
+  const [msgs, setMsgs] = useState([
+    { role: 'bot', text: `You're now connected to <strong>${db.name}</strong>. Just ask me anything in plain English — like "show me the top customers" or "how many orders came in this week".`, html: true },
+    { role: 'user', text: 'Show me the top 10 customers by revenue' },
+    {
+      role: 'bot', type: 'result',
+      sql: `SELECT email, SUM(total) AS revenue\nFROM users JOIN orders ON orders.user_id = users.id\nGROUP BY email ORDER BY revenue DESC LIMIT 10`,
+      rows: [
+        { Email: 'alice@corp.io', Revenue: '$14,209' },
+        { Email: 'bob@venture.co', Revenue: '$11,850' },
+        { Email: 'carol@startup.ai', Revenue: '$9,441' },
+        { Email: 'dan@bigco.com', Revenue: '$7,320' },
+        { Email: 'eve@freelance.dev', Revenue: '$6,180' },
+      ],
+    },
+  ]);
+  const endRef = useRef(null);
+  const tables = TABLES_DATA[db.id] || [];
+
+  useEffect(() => { if (endRef.current) endRef.current.scrollTop = endRef.current.scrollHeight; }, [msgs, thinking]);
+
+  const send = () => {
+    if (!input.trim()) return;
+    const t = input.trim(); setInput('');
+    setMsgs(m => [...m, { role: 'user', text: t }]);
+    setThinking(true);
+    setTimeout(() => {
+      setThinking(false);
+      setMsgs(m => [...m, {
+        role: 'bot', type: 'result',
+        sql: `SELECT * FROM orders\nWHERE status = 'pending'\nAND created_at >= NOW() - INTERVAL '30 days'`,
+        rows: [
+          { 'Order ID': '10821', Customer: 'alice@corp.io', Total: '$340', Status: 'Pending' },
+          { 'Order ID': '10834', Customer: 'bob@venture.co', Total: '$89', Status: 'Pending' },
+          { 'Order ID': '10850', Customer: 'carol@startup.ai', Total: '$1,240', Status: 'Pending' },
+        ],
+      }]);
+    }, 1300);
+  };
+
+  const histForDB = HISTORY.filter(h => h.dbId === db.id);
+  const histOther = HISTORY.filter(h => h.dbId !== db.id);
+
+  return (
+    <div className="page page-enter">
+      <div className="topbar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button className="back-btn" onClick={onBack}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+            All databases
+          </button>
+        </div>
+        <div className="db-chip">
+          <div className="db-chip-dot"></div>
+          {db.emoji} {db.name}
+        </div>
+        <div className="topbar-right">
+          <span className="badge green">● {config.model}</span>
+          
+        </div>
+      </div>
+
+      <div className="three-body">
+        {/* Left: History */}
+        <div className="history-panel">
+          <div className="panel-head">
+            <div>
+              <div className="panel-head-title">Past Chats</div>
+            </div>
+          </div>
+          <div className="new-chat-row">
+            <button className="new-chat-btn" onClick={() => setMsgs([{ role: 'bot', text: `New conversation started. What would you like to know about <strong>${db.name}</strong>?`, html: true }])}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New question
+            </button>
+          </div>
+          <div className="hist-list">
+            {histForDB.length > 0 && <>
+              <div className="section-label">This database</div>
+              {histForDB.map(h => (
+                <div key={h.id} className={`hist-item ${activeHist === h.id ? 'active' : ''}`} onClick={() => setActiveHist(h.id)}>
+                  <div className="hist-title">{h.title}</div>
+                  <div className="hist-time">{h.time}</div>
+                </div>
+              ))}
+            </>}
+            {histOther.length > 0 && <>
+              <div className="section-label" style={{ marginTop: 8 }}>Other databases</div>
+              {histOther.map(h => (
+                <div key={h.id} className={`hist-item ${activeHist === h.id ? 'active' : ''}`} onClick={() => setActiveHist(h.id)}>
+                  <div className="hist-title">{h.title}</div>
+                  <div className="hist-time">{h.time}</div>
+                  <div className="hist-db-badge">{h.dbName}</div>
+                </div>
+              ))}
+            </>}
+          </div>
+        </div>
+
+        {/* Center: Query chat */}
+        <div className="query-chat">
+          <div className="chat-top">
+            <div className="bot-avi" style={{ fontSize: 18 }}>💬</div>
+            <div>
+              <div className="chat-label">Ask your database</div>
+              <div className="chat-label-sub">{db.name} · No SQL needed</div>
+            </div>
+          </div>
+          <div className="query-msgs" ref={endRef}>
+            {msgs.map((m, i) => {
+              if (m.type === 'result') return <ResultCard key={i} m={m} />;
+              return (
+                <div key={i} className={`msg ${m.role}`}>
+                  <div className={`msg-av ${m.role === 'bot' ? 'bot-av' : 'user-av'}`}>{m.role === 'bot' ? '🤖' : 'A'}</div>
+                  <div className="bubble" {...(m.html ? { dangerouslySetInnerHTML: { __html: m.text } } : { children: m.text })} />
+                </div>
+              );
+            })}
+            {thinking && (
+              <div className="msg bot">
+                <div className="msg-av bot-av">🤖</div>
+                <div className="bubble"><div className="thinking"><div className="thinking-dot"/><div className="thinking-dot"/><div className="thinking-dot"/></div></div>
+              </div>
+            )}
+          </div>
+          <div className="chat-foot">
+            <textarea
+              className="chat-textarea" rows={1}
+              placeholder={`Ask anything… e.g. "How many orders did we get this week?"`}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            />
+            <button className="send-btn" disabled={!input.trim()} onClick={send}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Right: Tables */}
+        <div className="tables-panel">
+          <div className="panel-head">
+            <div>
+              <div className="panel-head-title">Data Tables</div>
+              <div className="panel-head-sub">{tables.length} tables available</div>
+            </div>
+          </div>
+          <div className="tables-scroll">
+            {tables.map(t => (
+              <div key={t.name} className={`table-row ${openTable === t.name ? 'open' : ''}`}>
+                <div className="table-row-head" onClick={() => setOpenTable(openTable === t.name ? null : t.name)}>
+                  <div className="table-row-icon">🗂️</div>
+                  <div>
+                    <div className="table-row-name">{t.name}</div>
+                    <div className="table-row-count">{t.cols.length} columns</div>
+                  </div>
+                  <svg className="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+                {openTable === t.name && t.cols.length > 0 && (
+                  <div className="cols-list">
+                    {t.cols.map(c => (
+                      <div key={c.name} className="col-row">
+                        <span className="col-type-badge">{c.type}</span>
+                        <span className="col-name">{c.name}</span>
+                        {c.pk && <span className="pk-badge">PK</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App ──────────────────────────────────────────────────────────────
+function App() {
+  const [page, setPage] = useState('setup');
+  const [config, setConfig] = useState(null);
+  const [db, setDb] = useState(null);
+
+  const changeModel = (model) => setConfig(c => ({ ...c, model }));
+  if (page === 'setup') return <SetupPage onConfirm={c => { setConfig(c); setPage('dbview'); }} />;
+  if (page === 'dbview') return <DBViewPage config={config} onSelectDB={d => { setDb(d); setPage('talk'); }} onModelChange={changeModel} />;
+  if (page === 'talk') return <TalkPage config={config} db={db} onBack={() => setPage('dbview')} onModelChange={changeModel} />;
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
