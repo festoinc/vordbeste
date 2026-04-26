@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="logo.png" alt="vorDBeste logo" width="200" />
+  <img src="logo.png" alt="vorDBeste logo" width="400" />
 
   <h3>Talk to your database and save your findings </h3>
 
