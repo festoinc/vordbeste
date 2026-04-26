@@ -3,8 +3,8 @@ import Logo from '../components/Logo';
 import { fetchModels, saveConfig } from '../api';
 
 const PROVIDERS = [
-  { id: 'anthropic', label: 'Anthropic', emoji: '🟣', desc: 'Claude models — great at understanding plain English', placeholder: 'sk-ant-api03-…' },
-  { id: 'openai', label: 'OpenAI', emoji: '🟢', desc: 'GPT-4o and more', placeholder: 'sk-proj-…' },
+  { id: 'anthropic', label: 'Anthropic', emoji: '🟣', desc: 'Claude models', placeholder: 'sk-ant-api03-…' },
+  { id: 'openai', label: 'OpenAI', emoji: '🟢', desc: 'GPT models', placeholder: 'sk-proj-…' },
 ];
 
 export default function SetupPage({ onComplete }) {
@@ -62,26 +62,15 @@ export default function SetupPage({ onComplete }) {
           {/* Step 1 — Provider */}
           <div className="field-group">
             <label className="field-label"><span className="step-num">1</span>Choose your AI provider</label>
-            <div>
+            <select
+              className="select"
+              value={provider}
+              onChange={e => { setProvider(e.target.value); setModels([]); setModel(''); setApiKey(''); }}
+            >
               {PROVIDERS.map(p => (
-                <div
-                  key={p.id}
-                  className={`provider-card ${provider === p.id ? 'selected' : ''}`}
-                  onClick={() => { setProvider(p.id); setModels([]); setModel(''); setApiKey(''); }}
-                >
-                  <span style={{ fontSize: 20 }}>{p.emoji}</span>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{p.label}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{p.desc}</div>
-                  </div>
-                  {provider === p.id && (
-                    <svg style={{ marginLeft: 'auto', flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)" stroke="none">
-                      <path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2zm-1.5 14.5l7-7-1.4-1.4-5.6 5.6-2.6-2.6-1.4 1.4 4 4z"/>
-                    </svg>
-                  )}
-                </div>
+                <option key={p.id} value={p.id}>{p.emoji} {p.label} — {p.desc}</option>
               ))}
-            </div>
+            </select>
           </div>
 
           {/* Step 2 — API Key */}
@@ -131,22 +120,16 @@ export default function SetupPage({ onComplete }) {
           {models.length > 0 && (
             <div className="field-group">
               <label className="field-label"><span className="step-num">3</span>Select a model</label>
-              {models.map(m => (
-                <div
-                  key={m.value}
-                  className={`model-row ${model === m.value ? 'selected' : ''}`}
-                  onClick={() => setModel(m.value)}
-                >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{m.label}</div>
-                  </div>
-                  {model === m.value && (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" stroke="none">
-                      <path d="M12 2a10 10 0 1 1 0 20A10 10 0 0 1 12 2zm-1.5 14.5l7-7-1.4-1.4-5.6 5.6-2.6-2.6-1.4 1.4 4 4z"/>
-                    </svg>
-                  )}
-                </div>
-              ))}
+              <select
+                className="select"
+                value={model}
+                onChange={e => setModel(e.target.value)}
+              >
+                <option value="" disabled>Choose a model…</option>
+                {models.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
             </div>
           )}
 
@@ -162,7 +145,7 @@ export default function SetupPage({ onComplete }) {
           </button>
 
           <div className="setup-divider">
-            No account needed &nbsp;·&nbsp; <a href="https://github.com/vordbeste/vordbeste" target="_blank" rel="noreferrer">GitHub ↗</a>
+            No account needed &nbsp;·&nbsp; <a href="https://github.com/festoinc/vordbeste" target="_blank" rel="noreferrer">GitHub ↗</a>
           </div>
         </div>
       </div>

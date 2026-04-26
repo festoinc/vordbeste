@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { fetchCurrentModels } from '../api';
 
 const PROVIDERS = {
   anthropic: 'Anthropic',
@@ -7,7 +8,22 @@ const PROVIDERS = {
 
 export default function ModelSwitcher({ config, models, onModelChange }) {
   const [open, setOpen] = useState(false);
+  const [dropdownModels, setDropdownModels] = useState(null);
+  const [loading, setLoading] = useState(false);
   const ref = useRef(null);
+
+  const loadModels = useCallback(async () => {
+    if (dropdownModels) return;
+    setLoading(true);
+    try {
+      const data = await fetchCurrentModels();
+      setDropdownModels(data.models || []);
+    } catch {
+      // keep showing current model only
+      setDropdownModels([{ value: config.model, label: config.model }]);
+    }
+    setLoading(false);
+  }, [dropdownModels, config.model]);
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -15,14 +31,19 @@ export default function ModelSwitcher({ config, models, onModelChange }) {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const currentLabel = models.find(m => m.value === config.model)?.label || config.model;
+  const currentLabel = (dropdownModels || models).find(m => m.value === config.model)?.label || config.model;
+
+  const handleToggle = () => {
+    if (!open) loadModels();
+    setOpen(v => !v);
+  };
 
   return (
     <div ref={ref} className="model-switcher-wrap">
       <span
         className="badge green"
         style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, userSelect: 'none' }}
-        onClick={() => setOpen(v => !v)}
+        onClick={handleToggle}
       >
         ● {currentLabel}
         <svg style={{ opacity: 0.6 }} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -35,7 +56,14 @@ export default function ModelSwitcher({ config, models, onModelChange }) {
             Switch model
           </div>
           <div className="model-dropdown-section">{PROVIDERS[config.provider] || config.provider}</div>
-          {models.map(m => (
+          {loading && (
+            <div style={{ padding: '12px 10px', fontSize: 13, color: 'var(--text3)', textAlign: 'center' }}>
+              <div className="loading-dots" style={{ display: 'inline-flex', verticalAlign: 'middle' }}>
+                <div className="loading-dot"/><div className="loading-dot"/><div className="loading-dot"/>
+              </div>
+            </div>
+          )}
+          {!loading && (dropdownModels || models).map(m => (
             <div
               key={m.value}
               className={`model-option ${config.model === m.value ? 'active' : ''}`}

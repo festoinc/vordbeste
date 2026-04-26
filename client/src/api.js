@@ -14,9 +14,36 @@ export async function saveConfig(data) {
   return res.json();
 }
 
+export async function patchConfig(data) {
+  const res = await fetch(`${BASE}/api/config`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function deleteAllData() {
+  const res = await fetch(`${BASE}/api/config/all-data`, { method: 'DELETE' });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Failed' }));
+    throw new Error(data.error || 'Failed to delete data');
+  }
+  return res.json();
+}
+
+export async function fetchCurrentModels() {
+  const res = await fetch(`${BASE}/api/models/current`);
+  if (!res.ok) throw new Error('Failed to fetch models');
+  return res.json();
+}
+
 export async function fetchModels(provider, apiKey) {
-  const params = new URLSearchParams({ provider, apiKey });
-  const res = await fetch(`${BASE}/api/models?${params}`);
+  const res = await fetch(`${BASE}/api/models`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider, apiKey }),
+  });
   return res.json();
 }
 

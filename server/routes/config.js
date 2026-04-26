@@ -20,4 +20,45 @@ router.post('/', (req, res) => {
   res.json({ ok: true });
 });
 
+// PATCH /api/config — partial update (e.g. change apiKey or model)
+router.patch('/', (req, res) => {
+  const cfg = readConfig();
+  if (!cfg) return res.status(400).json({ error: 'No config found' });
+  const updated = { ...cfg, ...req.body };
+  writeConfig(updated);
+  res.json({ ok: true });
+});
+
+// DELETE /api/config/provider/:provider — remove API key for a specific provider
+router.delete('/provider/:provider', (req, res) => {
+  const { provider } = req.params;
+  const cfg = readConfig();
+  if (!cfg) return res.status(400).json({ error: 'No config found' });
+  if (cfg.provider === provider) {
+    return res.status(400).json({ error: 'Cannot delete the active provider\'s key. Switch provider first.' });
+  }
+  // Store deleted keys per provider
+  const keys = cfg.deletedProviderKeys || {};
+  keys[provider] = true;
+  cfg.deletedProviderKeys = keys;
+  writeConfig(cfg);
+  res.json({ ok: true });
+});
+
+// DELETE /api/config/all-data — wipe everything
+router.delete('/all-data', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+  const dir = path.join(os.homedir(), '.vordbeste');
+  try {
+    if (fs.existsSync(dir)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete data: ' + err.message });
+  }
+});
+
 module.exports = router;

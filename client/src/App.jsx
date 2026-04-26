@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import SetupPage from './pages/SetupPage';
 import DBListPage from './pages/DBListPage';
 import TalkPage from './pages/TalkPage';
+import SettingsPage from './pages/SettingsPage';
 import { getConfig, fetchModels } from './api';
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
           setPage('talk');
         }}
         onModelChange={(model) => setConfig(c => ({ ...c, model }))}
+        onOpenSettings={() => setPage('settings')}
       />
     );
   }
@@ -69,6 +71,17 @@ export default function App() {
         db={db}
         onBack={() => setPage('dblist')}
         onModelChange={(model) => setConfig(c => ({ ...c, model }))}
+        onOpenSettings={() => setPage('settings')}
+      />
+    );
+  }
+
+  if (page === 'settings') {
+    return (
+      <SettingsPage
+        config={config}
+        onBack={() => setPage('dblist')}
+        onConfigChange={(newCfg) => setConfig(c => ({ ...c, ...newCfg }))}
       />
     );
   }

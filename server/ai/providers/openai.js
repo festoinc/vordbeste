@@ -6,12 +6,9 @@ async function fetchModels(apiKey) {
   try {
     const c = new OpenAI({ apiKey });
     const res = await c.models.list();
-    const gptModels = res.data
-      .filter(m => m.id.startsWith('gpt') || m.id.startsWith('o1') || m.id.startsWith('o3'))
+    return res.data
       .sort((a, b) => b.id.localeCompare(a.id))
-      .slice(0, 8)
       .map(m => ({ value: m.id, label: m.id }));
-    return gptModels;
   } catch {
     return [
       { value: 'gpt-4o', label: 'GPT-4o' },
