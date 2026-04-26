@@ -19,9 +19,11 @@ jobs:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
 
-      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npm publish --provenance --access public
+      # Use npx to fetch a recent npm CLI for trusted-publisher OIDC support;
+      # Node 22 bundles npm 10.x which can sign provenance but can't auth the
+      # upload, producing a 404.
+      - run: npx --yes npm@11 publish --provenance --access public
