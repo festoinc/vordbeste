@@ -23,7 +23,21 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+
+      - id: version_check
+        name: Check if version already published
+        run: |
+          local_version=$(node -p "require('./package.json').version")
+          published_version=$(npm view vordbeste version 2>/dev/null || echo "")
+          echo "local=$local_version published=$published_version"
+          if [ "$local_version" = "$published_version" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Use npx to fetch a recent npm CLI for trusted-publisher OIDC support;
       # Node 22 bundles npm 10.x which can sign provenance but can't auth the
       # upload, producing a 404.
-      - run: npx --yes npm@11 publish --provenance --access public
+      - if: steps.version_check.outputs.skip == 'false'
+        run: npx --yes npm@11 publish --provenance --access public
