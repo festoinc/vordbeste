@@ -1,12 +1,47 @@
 const BASE = '';
 
+let cachedToken = null;
+let tokenPromise = null;
+
+function readMetaToken() {
+  if (typeof document === 'undefined') return null;
+  const el = document.querySelector('meta[name="vordbeste-token"]');
+  return el?.getAttribute('content') || null;
+}
+
+async function getToken() {
+  if (cachedToken) return cachedToken;
+  const meta = readMetaToken();
+  if (meta) {
+    cachedToken = meta;
+    return cachedToken;
+  }
+  if (!tokenPromise) {
+    tokenPromise = fetch(`${BASE}/api/launch-token`, { credentials: 'omit' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { cachedToken = data?.token || null; return cachedToken; })
+      .catch(() => null);
+  }
+  return tokenPromise;
+}
+
+async function authHeaders(extra = {}) {
+  const token = await getToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
+async function apiFetch(path, opts = {}) {
+  const headers = await authHeaders(opts.headers || {});
+  return fetch(`${BASE}${path}`, { ...opts, headers, credentials: 'omit' });
+}
+
 export async function getConfig() {
-  const res = await fetch(`${BASE}/api/config`);
+  const res = await apiFetch(`/api/config`);
   return res.json();
 }
 
 export async function saveConfig(data) {
-  const res = await fetch(`${BASE}/api/config`, {
+  const res = await apiFetch(`/api/config`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -15,7 +50,7 @@ export async function saveConfig(data) {
 }
 
 export async function patchConfig(data) {
-  const res = await fetch(`${BASE}/api/config`, {
+  const res = await apiFetch(`/api/config`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -24,7 +59,7 @@ export async function patchConfig(data) {
 }
 
 export async function deleteAllData() {
-  const res = await fetch(`${BASE}/api/config/all-data`, { method: 'DELETE' });
+  const res = await apiFetch(`/api/config/all-data`, { method: 'DELETE' });
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: 'Failed' }));
     throw new Error(data.error || 'Failed to delete data');
@@ -33,13 +68,13 @@ export async function deleteAllData() {
 }
 
 export async function fetchCurrentModels() {
-  const res = await fetch(`${BASE}/api/models/current`);
+  const res = await apiFetch(`/api/models/current`);
   if (!res.ok) throw new Error('Failed to fetch models');
   return res.json();
 }
 
 export async function fetchModels(provider, apiKey) {
-  const res = await fetch(`${BASE}/api/models`, {
+  const res = await apiFetch(`/api/models`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ provider, apiKey }),
@@ -48,35 +83,29 @@ export async function fetchModels(provider, apiKey) {
 }
 
 export async function getDatabases() {
-  const res = await fetch(`${BASE}/api/databases`);
+  const res = await apiFetch(`/api/databases`);
   return res.json();
 }
 
 export async function getDatabase(slug) {
-  const res = await fetch(`${BASE}/api/databases/${slug}`);
+  const res = await apiFetch(`/api/databases/${slug}`);
   return res.json();
 }
 
 export async function getSessions(slug) {
-  const res = await fetch(`${BASE}/api/databases/${slug}/sessions`);
+  const res = await apiFetch(`/api/databases/${slug}/sessions`);
   return res.json();
 }
 
 export async function getSession(slug, sessionId) {
-  const res = await fetch(`${BASE}/api/databases/${slug}/sessions/${sessionId}`);
+  const res = await apiFetch(`/api/databases/${slug}/sessions/${sessionId}`);
   return res.json();
 }
 
-/**
- * Stream a chat turn via SSE.
- * @param {object} body - { messages, slug, sessionId, isConnectPage }
- * @param {function} onEvent - called for each parsed event
- * @returns {Promise} resolves when stream ends
- */
 export function streamChat(body, onEvent) {
   return new Promise(async (resolve, reject) => {
     try {
-      const res = await fetch(`${BASE}/api/chat`, {
+      const res = await apiFetch(`/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

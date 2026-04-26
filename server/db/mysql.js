@@ -14,7 +14,6 @@ async function connect(creds) {
     connectionLimit: 5,
     ssl: creds.ssl ? { rejectUnauthorized: false } : undefined,
   });
-  // Test it
   const conn = await pool.getConnection();
   conn.release();
   return pool;
@@ -24,34 +23,55 @@ async function disconnect(pool) {
   await pool.end();
 }
 
+async function readOnly(pool, fn) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.query('SET SESSION TRANSACTION READ ONLY');
+    await conn.query('START TRANSACTION READ ONLY');
+    try {
+      return await fn(conn);
+    } finally {
+      try { await conn.query('ROLLBACK'); } catch {}
+      try { await conn.query('SET SESSION TRANSACTION READ WRITE'); } catch {}
+    }
+  } finally {
+    conn.release();
+  }
+}
+
 async function runSelect(pool, sql) {
-  const [rows] = await pool.query(sql);
-  return { rows, rowCount: rows.length };
+  return readOnly(pool, async (conn) => {
+    const [rows] = await conn.query(sql);
+    return { rows, rowCount: rows.length };
+  });
 }
 
 async function runDescribe(pool, sql) {
-  const [rows] = await pool.query(sql);
-  return { rows, rowCount: rows.length };
+  return readOnly(pool, async (conn) => {
+    const [rows] = await conn.query(sql);
+    return { rows, rowCount: rows.length };
+  });
 }
 
 async function introspectSchema(pool) {
   const [dbRows] = await pool.query('SELECT DATABASE() AS db');
   const dbName = dbRows[0]?.db;
 
-  const [rows] = await pool.query(`
-    SELECT
-      c.TABLE_NAME AS table_name,
-      c.COLUMN_NAME AS column_name,
-      c.DATA_TYPE AS data_type,
-      c.IS_NULLABLE AS is_nullable,
-      c.COLUMN_DEFAULT AS column_default,
-      CASE WHEN c.COLUMN_KEY = 'PRI' THEN true ELSE false END AS is_primary_key
-    FROM information_schema.COLUMNS c
-    WHERE c.TABLE_SCHEMA = ?
-    ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION
-  `, [dbName]);
-
-  return groupByTable(rows);
+  return readOnly(pool, async (conn) => {
+    const [rows] = await conn.query(`
+      SELECT
+        c.TABLE_NAME AS table_name,
+        c.COLUMN_NAME AS column_name,
+        c.DATA_TYPE AS data_type,
+        c.IS_NULLABLE AS is_nullable,
+        c.COLUMN_DEFAULT AS column_default,
+        CASE WHEN c.COLUMN_KEY = 'PRI' THEN true ELSE false END AS is_primary_key
+      FROM information_schema.COLUMNS c
+      WHERE c.TABLE_SCHEMA = ?
+      ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION
+    `, [dbName]);
+    return groupByTable(rows);
+  });
 }
 
 function groupByTable(rows) {

@@ -101,7 +101,8 @@ const NAME_CHAT_HISTORY_TOOL = {
 
 async function executeTool(toolName, toolInput, context) {
   // context: { slug, sessionId, dbCreds, emit }
-  const { slug, sessionId, emit } = context;
+  const { slug, sessionId, dbCreds, emit } = context;
+  const dbType = dbCreds?.type;
 
   switch (toolName) {
     case 'connect_db':
@@ -120,9 +121,9 @@ async function executeTool(toolName, toolInput, context) {
       if (!sql) {
         return { error: 'print_result requires a SELECT query in "sql".' };
       }
-      const check = checkSelectOnly(sql);
+      const check = checkSelectOnly(sql, dbType);
       if (!check.safe) {
-        return { error: `Blocked: ${check.keyword} is not allowed — this app is read-only.` };
+        return { error: `Blocked: ${check.reason}. This app is read-only.` };
       }
       const safeSql = enforceLimit(sql);
       try {
@@ -130,13 +131,16 @@ async function executeTool(toolName, toolInput, context) {
         emit({ type: 'print_result', sql: safeSql, rows: result.rows });
         return { success: true, rowCount: result.rowCount };
       } catch (err) {
-        const msg = friendlyDbError(err);
-        return { error: msg };
+        return { error: friendlyDbError(err) };
       }
     }
 
     case 'run_describe': {
       const { sql } = toolInput;
+      const check = checkSelectOnly(sql, dbType, { allowDescribe: true });
+      if (!check.safe) {
+        return { error: `Blocked: ${check.reason}.` };
+      }
       try {
         const result = await dbDriver.runDescribe(slug, sql);
         return { rows: result.rows, rowCount: result.rowCount };
@@ -189,20 +193,18 @@ async function executeConnectDb(input, context) {
 
   const creds = { label, type, host, port: port || (type === 'mysql' ? '3306' : '5432'), database, user, password, ssl: !!ssl };
 
-  // Test connection first
+  const slug = fs.makeDbSlug({ host, port: creds.port, database });
+
   try {
-    await dbDriver.testConnection(creds);
+    await dbDriver.connect(slug, creds);
   } catch (err) {
     return { error: friendlyConnectionError(err) };
   }
 
-  // Save credentials
-  const slug = fs.makeDbSlug({ host, port: creds.port, database });
+  // Only persist credentials after a successful connect
   fs.writeDbEnv(slug, creds);
 
-  // Connect and introspect
   try {
-    await dbDriver.connect(slug, creds);
     const schema = await dbDriver.introspectSchema(slug);
 
     // Write initial table docs

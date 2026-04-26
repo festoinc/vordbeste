@@ -11,8 +11,10 @@ async function connect(creds) {
     database: creds.database,
     connectionTimeoutMillis: 8000,
     ssl: creds.ssl ? { rejectUnauthorized: false } : undefined,
+    max: 5,
   });
-  // Test it
+  pool.on('error', () => { /* swallow idle-client errors so they don't crash the process */ });
+  // Verify
   const client = await pool.connect();
   client.release();
   return pool;
@@ -22,14 +24,34 @@ async function disconnect(pool) {
   await pool.end();
 }
 
+async function readOnly(pool, fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+    try {
+      const result = await fn(client);
+      return result;
+    } finally {
+      // Always rollback — we never want to commit anything on the read path.
+      try { await client.query('ROLLBACK'); } catch {}
+    }
+  } finally {
+    client.release();
+  }
+}
+
 async function runSelect(pool, sql) {
-  const result = await pool.query(sql);
-  return { rows: result.rows, rowCount: result.rowCount };
+  return readOnly(pool, async (client) => {
+    const result = await client.query(sql);
+    return { rows: result.rows, rowCount: result.rowCount };
+  });
 }
 
 async function runDescribe(pool, sql) {
-  const result = await pool.query(sql);
-  return { rows: result.rows, rowCount: result.rowCount };
+  return readOnly(pool, async (client) => {
+    const result = await client.query(sql);
+    return { rows: result.rows, rowCount: result.rowCount };
+  });
 }
 
 async function introspectSchema(pool) {
@@ -52,8 +74,10 @@ async function introspectSchema(pool) {
     WHERE c.table_schema = 'public'
     ORDER BY c.table_name, c.ordinal_position
   `;
-  const result = await pool.query(sql);
-  return groupByTable(result.rows);
+  return readOnly(pool, async (client) => {
+    const result = await client.query(sql);
+    return groupByTable(result.rows);
+  });
 }
 
 function groupByTable(rows) {

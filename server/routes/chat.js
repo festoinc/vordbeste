@@ -7,17 +7,8 @@ const { readConfig } = require('../config');
 const fs = require('../fileSystem');
 const dbDriver = require('../db/index');
 
-/**
- * POST /api/chat
- * Body: {
- *   messages: [{role, content}],   // full conversation so far
- *   slug?: string,                  // current DB slug (null for connect page)
- *   sessionId?: string,             // current session ID
- *   isConnectPage: boolean
- * }
- *
- * Response: SSE stream of events
- */
+const MAX_TURNS_IN_PROMPT = 40;
+
 router.post('/', async (req, res) => {
   const config = readConfig();
   if (!config) {
@@ -29,7 +20,6 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'messages array is required' });
   }
 
-  // Set up SSE
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -39,23 +29,24 @@ router.post('/', async (req, res) => {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
   };
 
-  // Load DB creds if we have a slug
   let dbCreds = null;
   if (slug) {
-    dbCreds = fs.readDbEnv(slug);
-    // Ensure connected
-    if (!dbDriver.getConnection(slug) && dbCreds) {
+    try {
+      dbCreds = fs.readDbEnv(slug);
+    } catch (err) {
+      sendEvent({ type: 'error', message: 'Invalid database identifier.' });
+      return res.end();
+    }
+    if (dbCreds && !dbDriver.getConnection(slug)) {
       try {
         await dbDriver.connect(slug, dbCreds);
-      } catch (err) {
+      } catch {
         sendEvent({ type: 'error', message: 'Could not reconnect to the database. Please check the connection.' });
-        res.end();
-        return;
+        return res.end();
       }
     }
   }
 
-  // Create or reuse session
   let activeSessionId = sessionId;
   if (!activeSessionId && slug) {
     const session = fs.createSession(slug);
@@ -63,30 +54,66 @@ router.post('/', async (req, res) => {
     sendEvent({ type: 'session_created', sessionId: activeSessionId });
   }
 
-  // Persist the latest user message
+  // Append only the last user message to the transcript.
   if (slug && activeSessionId) {
-    fs.writeSessionTranscript(slug, activeSessionId, messages);
+    const last = messages[messages.length - 1];
+    if (last && last.role === 'user') {
+      try {
+        fs.appendSessionTurn(slug, activeSessionId, {
+          kind: 'user',
+          text: extractText(last.content),
+          ts: new Date().toISOString(),
+        });
+      } catch {}
+    }
   }
+
+  // Cap prompt size — keep the most recent turns plus the very first user message.
+  const trimmedMessages = trimMessages(messages, MAX_TURNS_IN_PROMPT);
+
+  // Buffer assistant text for the turn so we persist one assistant row at the end.
+  let assistantBuffer = '';
+  const events = [];
 
   try {
     await chat({
       provider: config.provider,
       apiKey: config.apiKey,
       model: config.model,
-      messages,
+      messages: trimmedMessages,
       slug,
       sessionId: activeSessionId,
       dbCreds,
       isConnectPage: !!isConnectPage,
       onEvent: (event) => {
         sendEvent(event);
-
-        // Persist transcript updates after tool results that produce data
-        if (event.type === 'tool_result' && slug && activeSessionId) {
-          // We persist at the end, handled below
+        if (event.type === 'text') assistantBuffer += event.text;
+        if (event.type === 'print_result') events.push({
+          kind: 'result',
+          sql: event.sql,
+          rowCount: Array.isArray(event.rows) ? event.rows.length : 0,
+          columns: Array.isArray(event.rows) && event.rows[0] ? Object.keys(event.rows[0]) : [],
+        });
+        if (event.type === 'session_titled' && slug && activeSessionId) {
+          try { fs.updateSessionTitle(slug, activeSessionId, event.title); } catch {}
         }
       },
     });
+
+    if (slug && activeSessionId) {
+      if (assistantBuffer.trim()) {
+        try {
+          fs.appendSessionTurn(slug, activeSessionId, {
+            kind: 'assistant',
+            text: assistantBuffer,
+            ts: new Date().toISOString(),
+          });
+        } catch {}
+      }
+      for (const ev of events) {
+        try { fs.appendSessionTurn(slug, activeSessionId, { ...ev, ts: new Date().toISOString() }); } catch {}
+      }
+    }
 
     sendEvent({ type: 'done' });
   } catch (err) {
@@ -95,5 +122,20 @@ router.post('/', async (req, res) => {
 
   res.end();
 });
+
+function extractText(content) {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content.filter(b => b && b.type === 'text').map(b => b.text).join('');
+  }
+  return '';
+}
+
+function trimMessages(messages, maxTurns) {
+  if (messages.length <= maxTurns) return messages;
+  const head = messages.slice(0, 1);
+  const tail = messages.slice(-maxTurns + 1);
+  return [...head, ...tail];
+}
 
 module.exports = router;
