@@ -49,7 +49,7 @@ export default function SetupPage({ onComplete }) {
       <div className="topbar">
         <Logo />
         <div className="topbar-right">
-          <span className="badge neutral">v0.1.0</span>
+          <span className="badge neutral">v{__APP_VERSION__}</span>
           <span className="badge">Open source</span>
         </div>
       </div>
