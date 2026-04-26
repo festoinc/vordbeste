@@ -1,7 +1,7 @@
 'use strict';
 
 const anthropicProvider = require('./providers/anthropic');
-const openaiProvider = require('./providers/openai');
+const openrouterProvider = require('./providers/openrouter');
 const { buildSystemPrompt } = require('./systemPrompt');
 const tools = require('./tools');
 
@@ -22,7 +22,7 @@ const CONNECT_PAGE_TOOLS = [
 /**
  * Run a chat turn.
  * @param {object} opts
- * @param {string} opts.provider - 'anthropic' | 'openai'
+ * @param {string} opts.provider - 'anthropic' | 'openrouter'
  * @param {string} opts.apiKey
  * @param {string} opts.model
  * @param {object[]} opts.messages - prior conversation [{role, content}]
@@ -46,7 +46,7 @@ async function chat({ provider, apiKey, model, messages, slug, sessionId, dbCred
   const onToolCall = (toolName, toolInput) =>
     tools.executeTool(toolName, toolInput, toolContext);
 
-  const runner = provider === 'openai' ? openaiProvider : anthropicProvider;
+  const runner = provider === 'openrouter' ? openrouterProvider : anthropicProvider;
 
   const finalText = await runner.runLoop({
     apiKey,
@@ -62,7 +62,7 @@ async function chat({ provider, apiKey, model, messages, slug, sessionId, dbCred
 }
 
 async function fetchModels(provider, apiKey) {
-  if (provider === 'openai') return openaiProvider.fetchModels(apiKey);
+  if (provider === 'openrouter') return openrouterProvider.fetchModels(apiKey);
   return anthropicProvider.fetchModels(apiKey);
 }
 

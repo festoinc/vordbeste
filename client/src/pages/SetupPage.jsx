@@ -3,8 +3,8 @@ import Logo from '../components/Logo';
 import { fetchModels, saveConfig } from '../api';
 
 const PROVIDERS = [
-  { id: 'anthropic', label: 'Anthropic', emoji: '🟣', desc: 'Claude models', placeholder: 'sk-ant-api03-…' },
-  { id: 'openai', label: 'OpenAI', emoji: '🟢', desc: 'GPT models', placeholder: 'sk-proj-…' },
+  { id: 'anthropic', label: 'Anthropic', emoji: '🟣', desc: 'Claude models (direct)', placeholder: 'sk-ant-api03-…' },
+  { id: 'openrouter', label: 'OpenRouter', emoji: '🌐', desc: 'GPT, Claude, Gemini, Llama & more', placeholder: 'sk-or-v1-…' },
 ];
 
 export default function SetupPage({ onComplete }) {

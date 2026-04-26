@@ -2,8 +2,17 @@
   "name": "vordbeste",
   "version": "0.1.0",
   "description": "Talk to your database in plain English",
+  "keywords": [
+    "database",
+    "ai",
+    "sql",
+    "natural-language",
+    "cli",
+    "llm"
+  ],
+  "license": "MIT",
   "bin": {
-    "vordbeste": "./bin/vordbeste.js"
+    "vordbeste": "bin/vordbeste.js"
   },
   "main": "server/index.js",
   "scripts": {

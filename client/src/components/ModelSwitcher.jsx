@@ -3,7 +3,7 @@ import { fetchCurrentModels } from '../api';
 
 const PROVIDERS = {
   anthropic: 'Anthropic',
-  openai: 'OpenAI',
+  openrouter: 'OpenRouter',
 };
 
 export default function ModelSwitcher({ config, models, onModelChange }) {

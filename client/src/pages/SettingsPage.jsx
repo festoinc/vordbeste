@@ -4,7 +4,7 @@ import { patchConfig, deleteAllData, fetchModels } from '../api';
 
 const PROVIDERS = [
   { id: 'anthropic', label: 'Anthropic', emoji: '🟣', placeholder: 'sk-ant-api03-…' },
-  { id: 'openai', label: 'OpenAI', emoji: '🟢', placeholder: 'sk-proj-…' },
+  { id: 'openrouter', label: 'OpenRouter', emoji: '🌐', placeholder: 'sk-or-v1-…' },
 ];
 
 export default function SettingsPage({ config, onBack, onConfigChange }) {
