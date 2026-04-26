@@ -330,9 +330,9 @@ body { background: var(--bg); color: var(--text); overflow: hidden; }
 }
 .chat-textarea {
   flex: 1; resize: none; border: 1.5px solid var(--border2); border-radius: 12px;
-  background: var(--surface); font-family: var(--sans); font-size: 14px; color: var(--text);
+  background: var(--surface); font-family: var(--sans); font-size: 14px; line-height: 1.45; color: var(--text);
   padding: 11px 16px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
-  min-height: 46px; max-height: 120px;
+  min-height: 46px; max-height: 164px; overflow-y: auto;
 }
 .chat-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
 .chat-textarea::placeholder { color: var(--text3); }
