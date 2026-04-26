@@ -53,10 +53,8 @@ body { background: var(--bg); color: var(--text); overflow: hidden; }
   display: flex; align-items: center; gap: 8px; letter-spacing: -0.02em;
 }
 .logo-mark {
-  width: 30px; height: 30px; border-radius: 8px;
-  background: var(--accent); display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; object-fit: contain;
 }
-.logo-mark svg { width: 16px; height: 16px; }
 .logo span { color: var(--accent); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 .badge {
