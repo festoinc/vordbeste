@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import Logo from '../components/Logo';
 import ModelSwitcher from '../components/ModelSwitcher';
 import ChatWindow from '../components/ChatWindow';
-import { getSessions, getSession, streamChat } from '../api';
+import { getSessions, getSession, streamChat, getDatabase, getDatabaseTable } from '../api';
 
 export default function TalkPage({ config, models, db, onBack, onModelChange, onOpenSettings }) {
   const [sessions, setSessions] = useState([]);
@@ -260,16 +260,15 @@ function TablesPanel({ slug }) {
   const [modalTable, setModalTable] = useState(null); // { name, content }
 
   useEffect(() => {
-    fetch(`/api/databases/${slug}`)
-      .then(r => r.json())
-      .then(data => setTables(data.tables || []));
+    getDatabase(slug)
+      .then(data => setTables(data.tables || []))
+      .catch(() => setTables([]));
   }, [slug]);
 
   const openTable = async (tableName) => {
     setModalTable({ name: tableName, content: null });
     try {
-      const res = await fetch(`/api/databases/${slug}/tables/${tableName}`);
-      const data = await res.json();
+      const data = await getDatabaseTable(slug, tableName);
       setModalTable({ name: tableName, content: data.content || '' });
     } catch {
       setModalTable({ name: tableName, content: '_Could not load table info._' });

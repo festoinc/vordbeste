@@ -92,6 +92,11 @@ export async function getDatabase(slug) {
   return res.json();
 }
 
+export async function getDatabaseTable(slug, tableName) {
+  const res = await apiFetch(`/api/databases/${slug}/tables/${encodeURIComponent(tableName)}`);
+  return res.json();
+}
+
 export async function getSessions(slug) {
   const res = await apiFetch(`/api/databases/${slug}/sessions`);
   return res.json();
