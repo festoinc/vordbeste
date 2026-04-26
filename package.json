@@ -11,6 +11,14 @@
     "llm"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/festoinc/vordbeste.git"
+  },
+  "homepage": "https://github.com/festoinc/vordbeste#readme",
+  "bugs": {
+    "url": "https://github.com/festoinc/vordbeste/issues"
+  },
   "bin": {
     "vordbeste": "bin/vordbeste.js"
   },
