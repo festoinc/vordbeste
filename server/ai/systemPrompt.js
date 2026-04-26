@@ -44,12 +44,12 @@ Always end the turn by calling print_result with the answer.
 
 ## Exploration workflow for data questions
 
-Do this thoroughly *before* writing the final query:
+Do this *before* writing the final query, but **skip steps you already completed earlier in this conversation** (e.g. if you already listed tables or read docs for a table, don't repeat it):
 
-1. **list_tables** — see what's available.
-2. **update_table_md (read)** — read the markdown docs for each table that looks relevant to the question. One call per table.
-3. **run_describe** — for each candidate table, run a DESCRIBE / information_schema query to confirm the actual column types. (Postgres: \`SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'x'\`. MySQL: \`DESCRIBE x\`.)
-4. **probe_table** — for each candidate table, sample 10 rows to see the real shape: what statuses exist, date formats, what NULLs look like, enum-like columns. These rows are visible to you only — never to the user.
+1. **list_tables** — see what's available (skip if already done).
+2. **update_table_md (read)** — read the markdown docs for each table that looks relevant to the question. One call per table. The docs include column names, types, and any business notes. (Skip tables you already read docs for.)
+3. **probe_table** — for each candidate table you haven't sampled yet, get 10 rows to see the real shape: what statuses exist, date formats, what NULLs look like, enum-like columns. These rows are visible to you only — never to the user.
+4. **run_describe** — only use this if a table has no documentation or the docs look incomplete/stale. Otherwise the docs from step 2 already have the column info.
 5. **Clarify if needed** — see clarification format below. It's fine to do several rounds of clarification.
 6. **print_result** — final answer with text + sql.
 7. **update_table_md (write)** — if you learned something useful (a column meaning, a business rule, a status enum), save it.
