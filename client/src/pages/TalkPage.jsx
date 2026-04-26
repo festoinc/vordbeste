@@ -60,6 +60,7 @@ export default function TalkPage({ config, models, db, onBack, onModelChange }) 
     setThinking(true);
 
     let assistantText = '';
+    let pendingResult = null;
     let currentSessionId = activeSessionId;
 
     try {
@@ -91,21 +92,7 @@ export default function TalkPage({ config, models, db, onBack, onModelChange }) 
           }
 
           if (event.type === 'print_result') {
-            const snapshot = { sql: event.sql, rows: event.rows };
-            assistantText = '';
-            setMessages(m => {
-              const finalized = m
-                .map(msg => {
-                  if (msg.role === 'assistant' && msg.streaming) {
-                    const trimmed = (msg.content || '').trim();
-                    if (!trimmed) return null;
-                    return { role: 'assistant', content: msg.content };
-                  }
-                  return msg;
-                })
-                .filter(Boolean);
-              return [...finalized, { role: 'assistant', type: 'result', ...snapshot }];
-            });
+            pendingResult = { sql: event.sql, rows: event.rows };
           }
 
           if (event.type === 'session_titled') {
@@ -122,16 +109,23 @@ export default function TalkPage({ config, models, db, onBack, onModelChange }) 
         }
       );
 
-      // Finalize streaming message
+      // Finalize: text bubble first, then result card if any
       setMessages(m => {
-        const msgs = [...m];
-        const lastIdx = msgs.length - 1;
-        if (msgs[lastIdx]?.streaming) {
-          msgs[lastIdx] = { role: 'assistant', content: assistantText };
-        } else if (assistantText && !msgs.some(msg => msg.streaming)) {
-          // text already finalized via result card path
+        const finalized = m
+          .map(msg => {
+            if (msg.role === 'assistant' && msg.streaming) {
+              const trimmed = (msg.content || '').trim();
+              if (!trimmed && !pendingResult) return null;
+              return { role: 'assistant', content: msg.content };
+            }
+            return msg;
+          })
+          .filter(Boolean);
+
+        if (pendingResult) {
+          return [...finalized, { role: 'assistant', type: 'result', ...pendingResult }];
         }
-        return msgs;
+        return finalized;
       });
 
       await loadSessions();
