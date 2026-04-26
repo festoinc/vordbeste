@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="logo.png" alt="vorDBeste logo" width="400" />
+  <img src="https://github.com/festoinc/vordbeste/blob/main/logo.png" alt="vorDBeste logo" width="320" />
 
-  <h3>Talk to your database and save your findings </h3>
+  <h3>Talk to your database and learn with it </h3>
 
   <p>
     <em>vorbește</em> (Romanian) — to speak. + <strong>DB</strong>. = Speak to your database with AI.
