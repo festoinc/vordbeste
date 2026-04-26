@@ -37,7 +37,7 @@ That's it. The server starts on `localhost:3456` and the browser opens automatic
 On first launch, you'll be guided through a setup page to configure:
 
 1. **Database connection** — PostgreSQL or MySQL
-2. **AI provider** — Anthropic, OpenAI, or Ollama, and your API key
+2. **AI provider** — Anthropic, OpenRouter
 
 ## Safety Guarantees
 
@@ -85,7 +85,7 @@ Table files document discovered structure, column meanings, and useful queries. 
 
 - **Backend:** Node.js, Express
 - **Frontend:** React, Vite
-- **AI:** Anthropic / OpenAI / Ollama
+- **AI:** Anthropic / OpenRouter 
 - **Databases:** PostgreSQL, MySQL
 
 ## License
