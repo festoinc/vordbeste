@@ -4,6 +4,7 @@ import { fetchCurrentModels } from '../api';
 const PROVIDERS = {
   anthropic: 'Anthropic',
   openrouter: 'OpenRouter',
+  zai: 'Z.AI',
 };
 
 export default function ModelSwitcher({ config, models, onModelChange }) {

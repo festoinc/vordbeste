@@ -5,6 +5,7 @@ import { patchConfig, deleteAllData, fetchModels } from '../api';
 const PROVIDERS = [
   { id: 'anthropic', label: 'Anthropic', emoji: '🟣', placeholder: 'sk-ant-api03-…' },
   { id: 'openrouter', label: 'OpenRouter', emoji: '🌐', placeholder: 'sk-or-v1-…' },
+  { id: 'zai', label: 'Z.AI', emoji: '🔵', placeholder: 'your-z.ai-api-key' },
 ];
 
 export default function SettingsPage({ config, onBack, onConfigChange }) {

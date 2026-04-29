@@ -5,6 +5,7 @@ import { fetchModels, saveConfig } from '../api';
 const PROVIDERS = [
   { id: 'anthropic', label: 'Anthropic', emoji: '🟣', desc: 'Claude models (direct)', placeholder: 'sk-ant-api03-…' },
   { id: 'openrouter', label: 'OpenRouter', emoji: '🌐', desc: 'GPT, Claude, Gemini, Llama & more', placeholder: 'sk-or-v1-…' },
+  { id: 'zai', label: 'Z.AI', emoji: '🔵', desc: 'GLM models (coding-optimized)', placeholder: 'your-z.ai-api-key' },
 ];
 
 export default function SetupPage({ onComplete }) {

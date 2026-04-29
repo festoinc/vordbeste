@@ -1,9 +1,15 @@
 'use strict';
 
-const anthropicProvider = require('./providers/anthropic');
-const openrouterProvider = require('./providers/openrouter');
 const { buildSystemPrompt } = require('./systemPrompt');
 const tools = require('./tools');
+
+function getProviders() {
+  return {
+    anthropic: require('./providers/anthropic'),
+    openrouter: require('./providers/openrouter'),
+    zai: require('./providers/zai'),
+  };
+}
 
 const ALL_TOOLS = [
   tools.LIST_TABLES_TOOL,
@@ -46,7 +52,9 @@ async function chat({ provider, apiKey, model, messages, slug, sessionId, dbCred
   const onToolCall = (toolName, toolInput) =>
     tools.executeTool(toolName, toolInput, toolContext);
 
-  const runner = provider === 'openrouter' ? openrouterProvider : anthropicProvider;
+  const providers = getProviders();
+  const runner = providers[provider];
+  if (!runner) throw new Error(`Unknown provider: ${provider}`);
 
   const finalText = await runner.runLoop({
     apiKey,
@@ -62,8 +70,10 @@ async function chat({ provider, apiKey, model, messages, slug, sessionId, dbCred
 }
 
 async function fetchModels(provider, apiKey) {
-  if (provider === 'openrouter') return openrouterProvider.fetchModels(apiKey);
-  return anthropicProvider.fetchModels(apiKey);
+  const providers = getProviders();
+  const p = providers[provider];
+  if (!p) throw new Error(`Unknown provider: ${provider}`);
+  return p.fetchModels(apiKey);
 }
 
 module.exports = { chat, fetchModels };
