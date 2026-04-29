@@ -67,6 +67,15 @@ export async function deleteAllData() {
   return res.json();
 }
 
+export async function deleteApiKey() {
+  const res = await apiFetch(`/api/config/key`, { method: 'DELETE' });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Failed' }));
+    throw new Error(data.error || 'Failed to delete API key');
+  }
+  return res.json();
+}
+
 export async function fetchCurrentModels() {
   const res = await apiFetch(`/api/models/current`);
   if (!res.ok) throw new Error('Failed to fetch models');

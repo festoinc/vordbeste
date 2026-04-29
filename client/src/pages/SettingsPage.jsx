@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Logo from '../components/Logo';
-import { patchConfig, deleteAllData, fetchModels } from '../api';
+import { patchConfig, deleteAllData, deleteApiKey, fetchModels } from '../api';
 
 const PROVIDERS = [
   { id: 'anthropic', label: 'Anthropic', emoji: '🟣', placeholder: 'sk-ant-api03-…' },
@@ -49,9 +49,9 @@ export default function SettingsPage({ config, onBack, onConfigChange }) {
       setConfirmDeleteKey(true);
       return;
     }
-    // Clear the config — user will be sent back to setup
+    // Remove only the API key config — databases and chat history are preserved
     try {
-      await deleteAllData();
+      await deleteApiKey();
       window.location.reload();
     } catch (err) {
       setFeedback({ type: 'error', msg: err.message });

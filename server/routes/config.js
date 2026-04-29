@@ -2,7 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { readConfig, writeConfig } = require('../config');
+const { readConfig, writeConfig, getVordbesteDir } = require('../config');
 
 router.get('/', (req, res) => {
   const config = readConfig();
@@ -45,12 +45,26 @@ router.delete('/provider/:provider', (req, res) => {
   res.json({ ok: true });
 });
 
+// DELETE /api/config/key — remove only the API key config, preserve databases
+router.delete('/key', (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const dir = getVordbesteDir();
+  const cfg = path.join(dir, 'config.json');
+  try {
+    if (fs.existsSync(cfg)) {
+      fs.unlinkSync(cfg);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete config: ' + err.message });
+  }
+});
+
 // DELETE /api/config/all-data — wipe everything
 router.delete('/all-data', (req, res) => {
   const fs = require('fs');
-  const path = require('path');
-  const os = require('os');
-  const dir = path.join(os.homedir(), '.vordbeste');
+  const dir = getVordbesteDir();
   try {
     if (fs.existsSync(dir)) {
       fs.rmSync(dir, { recursive: true, force: true });
