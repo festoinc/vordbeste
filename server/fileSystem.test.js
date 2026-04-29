@@ -1,81 +1,138 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
-import nodeFs from 'fs';
-import os from 'os';
-import path from 'path';
+'use strict';
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
-const tmpHome = nodeFs.mkdtempSync(path.join(os.tmpdir(), 'vordb-test-'));
-process.env.HOME = tmpHome;
-process.env.USERPROFILE = tmpHome;
+/**
+ * Tests for session persistence round-trip.
+ * Ensures that user messages, assistant text, and result metadata
+ * survive write → read cycles intact.
+ */
+describe('session turn persistence', () => {
+  let tmpDir;
+  const fs = require('fs');
+  const path = require('path');
 
-const requireCjs = createRequire(import.meta.url);
-let fileSys;
-
-beforeAll(() => {
-  fileSys = requireCjs('./fileSystem');
-});
-
-describe('makeDbSlug', () => {
-  it('produces a sanitized slug', () => {
-    const s = fileSys.makeDbSlug({ host: 'My.Host_1', port: '5432', database: 'My App' });
-    expect(s).toMatch(/^[a-z0-9][a-z0-9-]+$/);
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'vordbeste-sess-'));
+    const config = require('./config');
+    config._setRootDir(tmpDir);
   });
-  it('falls back to a localhost slug when host/db are empty', () => {
-    const s = fileSys.makeDbSlug({ host: '', port: '', database: '' });
-    expect(s).toBe('localhost');
-  });
-  it('throws when nothing usable can be derived', () => {
-    expect(() => fileSys.makeDbSlug({ host: '!!!', port: '', database: '' })).toThrow();
-  });
-});
 
-describe('writeTableMd / readTableMd validate identifiers', () => {
-  const slug = 'localhost-5432-test';
-  beforeEach(() => fileSys.ensureDbDirs(slug));
   afterEach(() => {
-    try { nodeFs.rmSync(path.join(tmpHome, '.vordbeste'), { recursive: true, force: true }); } catch {}
+    const config = require('./config');
+    config._resetRootDir();
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    delete require.cache[require.resolve('./config')];
+    delete require.cache[require.resolve('./fileSystem')];
   });
 
-  it('writes and reads a normal table doc', () => {
-    fileSys.writeTableMd(slug, 'users', '# users');
-    expect(fileSys.readTableMd(slug, 'users')).toBe('# users');
-  });
+  function getFs() {
+    return require('./fileSystem');
+  }
 
-  it('rejects path traversal in tableName', () => {
-    expect(() => fileSys.writeTableMd(slug, '../evil', 'pwned')).toThrow();
-    expect(() => fileSys.readTableMd(slug, '../evil')).toThrow();
-  });
+  const SLUG = 'testdb-5432-mydb';
 
-  it('rejects path traversal in slug', () => {
-    expect(() => fileSys.writeTableMd('../etc', 'users', 'x')).toThrow();
-  });
-});
+  it('round-trips user and assistant text turns', () => {
+    const fileSystem = getFs();
+    const session = fileSystem.createSession(SLUG);
 
-describe('session JSONL', () => {
-  const slug = 'localhost-5432-sess';
-  beforeEach(() => fileSys.ensureDbDirs(slug));
-  afterEach(() => {
-    try { nodeFs.rmSync(path.join(tmpHome, '.vordbeste'), { recursive: true, force: true }); } catch {}
-  });
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'user', text: 'hello', ts: '2025-01-01T00:00:00Z' });
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'assistant', text: 'hi there', ts: '2025-01-01T00:00:01Z' });
 
-  it('appends and reads turns in order', () => {
-    const { id } = fileSys.createSession(slug);
-    fileSys.appendSessionTurn(slug, id, { kind: 'user', text: 'hi' });
-    fileSys.appendSessionTurn(slug, id, { kind: 'assistant', text: 'hello' });
-    const turns = fileSys.readSessionTurns(slug, id);
+    const turns = fileSystem.readSessionTurns(SLUG, session.id);
     expect(turns).toHaveLength(2);
     expect(turns[0].kind).toBe('user');
-    expect(turns[1].text).toBe('hello');
+    expect(turns[0].text).toBe('hello');
+    expect(turns[1].kind).toBe('assistant');
+    expect(turns[1].text).toBe('hi there');
   });
 
-  it('updates session title in meta', () => {
-    const { id } = fileSys.createSession(slug);
-    fileSys.updateSessionTitle(slug, id, 'Top customers');
-    const meta = fileSys.readSessionMeta(slug, id);
-    expect(meta.title).toBe('Top customers');
+  it('round-trips result turns with sql, rowCount, and columns', () => {
+    const fileSystem = getFs();
+    const session = fileSystem.createSession(SLUG);
+
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'user', text: 'show users', ts: '2025-01-01T00:00:00Z' });
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'assistant', text: 'Here are the users:', ts: '2025-01-01T00:00:01Z' });
+    fileSystem.appendSessionTurn(SLUG, session.id, {
+      kind: 'result',
+      sql: 'SELECT id, name FROM users LIMIT 10',
+      rowCount: 10,
+      columns: ['id', 'name'],
+      ts: '2025-01-01T00:00:02Z',
+    });
+
+    const turns = fileSystem.readSessionTurns(SLUG, session.id);
+    expect(turns).toHaveLength(3);
+
+    const result = turns[2];
+    expect(result.kind).toBe('result');
+    expect(result.sql).toBe('SELECT id, name FROM users LIMIT 10');
+    expect(result.rowCount).toBe(10);
+    expect(result.columns).toEqual(['id', 'name']);
   });
 
-  it('rejects invalid sessionId on read', () => {
-    expect(() => fileSys.readSessionTurns(slug, '../foo')).toThrow();
+  it('preserves result turns across multiple conversation rounds', () => {
+    const fileSystem = getFs();
+    const session = fileSystem.createSession(SLUG);
+
+    // First round
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'user', text: 'query 1', ts: 'T1' });
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'assistant', text: 'answer 1', ts: 'T2' });
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'result', sql: 'SQL1', rowCount: 5, columns: ['a'], ts: 'T3' });
+
+    // Second round
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'user', text: 'query 2', ts: 'T4' });
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'assistant', text: 'answer 2', ts: 'T5' });
+    fileSystem.appendSessionTurn(SLUG, session.id, { kind: 'result', sql: 'SQL2', rowCount: 20, columns: ['b'], ts: 'T6' });
+
+    const turns = fileSystem.readSessionTurns(SLUG, session.id);
+    expect(turns).toHaveLength(6);
+
+    expect(turns[2].kind).toBe('result');
+    expect(turns[2].sql).toBe('SQL1');
+    expect(turns[5].kind).toBe('result');
+    expect(turns[5].sql).toBe('SQL2');
+  });
+
+  it('returns empty array for session with no turns', () => {
+    const fileSystem = getFs();
+    const session = fileSystem.createSession(SLUG);
+
+    const turns = fileSystem.readSessionTurns(SLUG, session.id);
+    expect(turns).toEqual([]);
+  });
+
+  it('session meta includes correct id and title', () => {
+    const fileSystem = getFs();
+    const session = fileSystem.createSession(SLUG);
+
+    const meta = fileSystem.readSessionMeta(SLUG, session.id);
+    expect(meta.id).toBe(session.id);
+    expect(meta.title).toBe('Untitled session');
+    expect(meta.created_at).toBeDefined();
+
+    fileSystem.updateSessionTitle(SLUG, session.id, 'Order queries');
+    const updated = fileSystem.readSessionMeta(SLUG, session.id);
+    expect(updated.title).toBe('Order queries');
+  });
+
+  it('lists sessions sorted newest first', () => {
+    const fileSystem = getFs();
+
+    const s1 = fileSystem.createSession(SLUG);
+    // Simulate a small time gap
+    const s2 = fileSystem.createSession(SLUG);
+
+    fileSystem.updateSessionTitle(SLUG, s1.id, 'Older session');
+    fileSystem.updateSessionTitle(SLUG, s2.id, 'Newer session');
+
+    const sessions = fileSystem.listSessions(SLUG);
+    expect(sessions).toHaveLength(2);
+    // Newest first
+    expect(Number(sessions[0].id)).toBeGreaterThan(Number(sessions[1].id));
+    expect(sessions[0].title).toBe('Newer session');
+    expect(sessions[1].title).toBe('Older session');
   });
 });

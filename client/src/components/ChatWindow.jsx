@@ -183,13 +183,13 @@ export default function ChatWindow({ messages, thinking, onChipSelect, chipsDisa
             <div key={i} className="msg user">
               <div className="msg-av user-av">U</div>
               <div className="msg-content">
-                <div className="bubble">{m.content}</div>
+                <div className="bubble" style={{ whiteSpace: 'pre-wrap' }}>{m.content}</div>
               </div>
             </div>
           );
         }
         if (m.type === 'result') {
-          return <ResultCard key={i} sql={m.sql} rows={m.rows} />;
+          return <ResultCard key={i} sql={m.sql} rows={m.rows} rowCount={m.rowCount} />;
         }
         if (m.type === 'write_warning') {
           return (

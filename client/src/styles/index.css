@@ -415,6 +415,24 @@ body { background: var(--bg); color: var(--text); overflow: hidden; }
   width: 240px; background: var(--surface); border-left: 1px solid var(--border);
   display: flex; flex-direction: column; overflow: hidden;
 }
+.tables-search {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.tables-search-input {
+  flex: 1; border: none; outline: none;
+  font-family: var(--sans); font-size: 12.5px; color: var(--text);
+  background: transparent; min-width: 0;
+}
+.tables-search-input::placeholder { color: var(--text3); }
+.tables-search-clear {
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text3); transition: all 0.12s; flex-shrink: 0;
+}
+.tables-search-clear:hover { background: var(--surface2); color: var(--text2); }
 .tables-scroll { flex: 1; overflow-y: auto; padding: 6px 4px; }
 
 /* File-tree rows */

@@ -57,7 +57,7 @@ function downloadAs(rows, format) {
   URL.revokeObjectURL(url);
 }
 
-export default function ResultCard({ sql, rows }) {
+export default function ResultCard({ sql, rows, rowCount: storedRowCount }) {
   const [sqlOpen, setSqlOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(null);
@@ -68,7 +68,12 @@ export default function ResultCard({ sql, rows }) {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const isStored = typeof storedRowCount === 'number';
+  const displayRowCount = rows ? rows.length : 0;
+
   if (!rows || rows.length === 0) {
+    const label = isStored ? `${storedRowCount} row${storedRowCount !== 1 ? 's' : ''} returned` : 'No results';
+    const foot = isStored ? 'Row data is not stored for past sessions' : 'No rows returned';
     return (
       <div className="msg bot">
         <div className="msg-av bot-av">🤖</div>
@@ -77,11 +82,11 @@ export default function ResultCard({ sql, rows }) {
             <>
               <div className="result-card-head" onClick={() => setSqlOpen(v => !v)}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--accent)' }}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                <span className="result-card-head-label">No results</span>
+                <span className="result-card-head-label">Query Result</span>
                 <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--text3)' }}>{sqlOpen ? 'Hide SQL' : 'View SQL'}</span>
               </div>
               {sqlOpen && <div className="sql-snippet" dangerouslySetInnerHTML={{ __html: highlightSql(sql) }} />}
-              <div className="result-foot">No rows returned</div>
+              <div className="result-foot">{foot}</div>
             </>
           )}
         </div></div>

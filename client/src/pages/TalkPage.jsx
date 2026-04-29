@@ -43,9 +43,13 @@ export default function TalkPage({ config, models, db, onBack, onModelChange, on
       setActiveSessionId(session.id);
       setReadOnly(true);
       // Convert stored messages to display format
-      const displayMsgs = (data.messages || []).map(m => {
-        if (m.role === 'assistant' && m.type === 'result') return m;
-        return { role: m.role, content: m.content };
+      const displayMsgs = (data.messages || []).flatMap(m => {
+        if (m.role === 'assistant' && m.type === 'result') return [m];
+        if (m.role === 'assistant' && m.result) {
+          // Server returns result metadata without row data
+          return [{ role: 'assistant', type: 'result', sql: m.result.sql, rows: [], rowCount: m.result.rowCount }];
+        }
+        return [{ role: m.role, content: m.content }];
       });
       setMessages(displayMsgs.length ? displayMsgs : [{ role: 'assistant', content: 'This session has no messages.' }]);
     } catch {}
@@ -258,12 +262,17 @@ export default function TalkPage({ config, models, db, onBack, onModelChange, on
 function TablesPanel({ slug }) {
   const [tables, setTables] = useState([]);
   const [modalTable, setModalTable] = useState(null); // { name, content }
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     getDatabase(slug)
       .then(data => setTables(data.tables || []))
       .catch(() => setTables([]));
   }, [slug]);
+
+  const filtered = search.trim()
+    ? tables.filter(t => t.toLowerCase().includes(search.trim().toLowerCase()))
+    : tables;
 
   const openTable = async (tableName) => {
     setModalTable({ name: tableName, content: null });
@@ -281,11 +290,29 @@ function TablesPanel({ slug }) {
         <div className="panel-head">
           <div>
             <div className="panel-head-title">Tables</div>
-            <div className="panel-head-sub">{tables.length} tables</div>
+            <div className="panel-head-sub">{filtered.length}{filtered.length !== tables.length ? ` of ${tables.length}` : ''} tables</div>
           </div>
         </div>
+        <div className="tables-search">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, color: 'var(--text3)' }}>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            className="tables-search-input"
+            placeholder="Filter tables…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="tables-search-clear" onClick={() => setSearch('')}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
+        </div>
         <div className="tables-scroll">
-          {tables.map(t => (
+          {filtered.map(t => (
             <div key={t} className="ftree-row" onClick={() => openTable(t)}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
                 style={{ flexShrink: 0, color: 'var(--text3)' }}>
