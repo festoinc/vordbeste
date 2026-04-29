@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Logo from '../components/Logo';
 import ModelSwitcher from '../components/ModelSwitcher';
 import ChatWindow from '../components/ChatWindow';
@@ -143,6 +143,23 @@ export default function TalkPage({ config, models, db, onBack, onModelChange, on
     setThinking(false);
   };
 
+  const handleLearningsReviewed = useCallback(async (confirmed, rejected) => {
+    if (confirmed.length === 0) return;
+    const learningsText = confirmed
+      .map((l, i) => `${i + 1}. Table "${l.table}": ${l.learning}`)
+      .join('\n');
+    const msg = `Save the following confirmed learnings. Read the existing table documentation first, then update each table's doc by merging in the new learning. Use update_table_md with action: write for each table.\n\nConfirmed learnings:\n${learningsText}`;
+    try {
+      await streamChat({
+        messages: [...messages, { role: 'user', content: msg }],
+        slug: db.slug,
+        sessionId: activeSessionId,
+        isConnectPage: false,
+        ephemeral: true,
+      }, () => {});
+    } catch {}
+  }, [messages, db.slug, activeSessionId]);
+
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -230,6 +247,7 @@ export default function TalkPage({ config, models, db, onBack, onModelChange, on
             onChipSelect={(opt) => send(opt)}
             chipsDisabled={thinking || readOnly}
             readOnly={readOnly}
+            onLearningsReviewed={handleLearningsReviewed}
           />
 
           <div className="chat-foot">

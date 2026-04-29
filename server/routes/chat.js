@@ -15,7 +15,7 @@ router.post('/', async (req, res) => {
     return res.status(401).json({ error: 'Not configured. Please set up your API key first.' });
   }
 
-  const { messages, slug, sessionId, isConnectPage } = req.body;
+  const { messages, slug, sessionId, isConnectPage, ephemeral } = req.body;
   if (!messages || !Array.isArray(messages)) {
     return res.status(400).json({ error: 'messages array is required' });
   }
@@ -48,14 +48,14 @@ router.post('/', async (req, res) => {
   }
 
   let activeSessionId = sessionId;
-  if (!activeSessionId && slug) {
+  if (!activeSessionId && slug && !ephemeral) {
     const session = fs.createSession(slug);
     activeSessionId = session.id;
     sendEvent({ type: 'session_created', sessionId: activeSessionId });
   }
 
   // Append only the last user message to the transcript.
-  if (slug && activeSessionId) {
+  if (slug && activeSessionId && !ephemeral) {
     const last = messages[messages.length - 1];
     if (last && last.role === 'user') {
       try {
@@ -100,7 +100,7 @@ router.post('/', async (req, res) => {
       },
     });
 
-    if (slug && activeSessionId) {
+    if (slug && activeSessionId && !ephemeral) {
       if (assistantBuffer.trim()) {
         try {
           fs.appendSessionTurn(slug, activeSessionId, {

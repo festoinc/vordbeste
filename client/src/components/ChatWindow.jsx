@@ -4,14 +4,33 @@ import ResultCard from './ResultCard';
 function parseMessage(text) {
   // Extract clarification block if present
   const clarMatch = text.match(/<clarification>([\s\S]*?)<\/clarification>/);
+  let clarification = null;
+  let cleanText = text;
   if (clarMatch) {
     try {
-      const data = JSON.parse(clarMatch[1]);
-      const cleanText = text.replace(/<clarification>[\s\S]*?<\/clarification>/, '').trim();
-      return { text: cleanText, clarification: data };
+      clarification = JSON.parse(clarMatch[1]);
+      cleanText = text.replace(/<clarification>[\s\S]*?<\/clarification>/, '').trim();
     } catch {}
   }
-  return { text, clarification: null };
+
+  // Extract learnings block
+  let learnings = null;
+  const learnMatch = cleanText.match(/<learnings>([\s\S]*?)<\/learnings>/);
+  if (learnMatch) {
+    try {
+      const parsed = JSON.parse(learnMatch[1]);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        learnings = parsed;
+      }
+    } catch {}
+    cleanText = cleanText.replace(/<learnings>[\s\S]*?<\/learnings>/, '').trim();
+  }
+  // Strip NO_NEW_LEARNINGS marker
+  if (cleanText.includes('NO_NEW_LEARNINGS')) {
+    cleanText = cleanText.replace(/\bNO_NEW_LEARNINGS\b/g, '').trim();
+  }
+
+  return { text: cleanText, clarification, learnings };
 }
 
 function renderMarkdown(text) {
@@ -160,7 +179,57 @@ function TextClarification({ data, disabled, onSubmit }) {
   );
 }
 
-export default function ChatWindow({ messages, thinking, onChipSelect, chipsDisabled, readOnly }) {
+function LearningsWidget({ learnings, onComplete }) {
+  const [reviews, setReviews] = useState({});
+  const submittedRef = useRef(false);
+
+  const review = (index, decision) => {
+    setReviews(prev => ({ ...prev, [index]: decision }));
+  };
+
+  const allReviewed = learnings.every((_, i) => reviews[i]);
+
+  useEffect(() => {
+    if (allReviewed && !submittedRef.current && learnings.length > 0) {
+      submittedRef.current = true;
+      const confirmed = learnings.filter((_, i) => reviews[i] === 'confirmed');
+      const rejected = learnings.filter((_, i) => reviews[i] === 'rejected');
+      onComplete(confirmed, rejected);
+    }
+  }, [allReviewed]);
+
+  return (
+    <div className="learnings-widget">
+      <div className="learnings-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        Proposed Learnings
+      </div>
+      {learnings.map((l, i) => (
+        <div key={i} className={`learnings-row ${reviews[i] || ''}`}>
+          <div className="learnings-row-content">
+            <span className="learnings-table">{l.table}</span>
+            <span className="learnings-text">{l.learning}</span>
+          </div>
+          {!reviews[i] && (
+            <div className="learnings-actions">
+              <button className="learnings-btn confirm" onClick={() => review(i, 'confirmed')}>Confirm</button>
+              <button className="learnings-btn reject" onClick={() => review(i, 'rejected')}>Reject</button>
+            </div>
+          )}
+          {reviews[i] === 'confirmed' && <span className="learnings-badge confirmed">✓ Saved</span>}
+          {reviews[i] === 'rejected' && <span className="learnings-badge rejected">✗ Skipped</span>}
+        </div>
+      ))}
+      {allReviewed && (
+        <div className="learnings-done">All learnings reviewed</div>
+      )}
+    </div>
+  );
+}
+
+export default function ChatWindow({ messages, thinking, onChipSelect, chipsDisabled, readOnly, onLearningsReviewed }) {
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -177,37 +246,55 @@ export default function ChatWindow({ messages, thinking, onChipSelect, chipsDisa
           Read-only view
         </div>
       )}
-      {messages.map((m, i) => {
-        if (m.role === 'user') {
-          return (
-            <div key={i} className="msg user">
-              <div className="msg-av user-av">U</div>
-              <div className="msg-content">
-                <div className="bubble" style={{ whiteSpace: 'pre-wrap' }}>{m.content}</div>
+      {(() => {
+        let pendingLearnings = null;
+        return messages.flatMap((m, i) => {
+          const els = [];
+          if (m.role === 'user') {
+            els.push(
+              <div key={i} className="msg user">
+                <div className="msg-av user-av">U</div>
+                <div className="msg-content">
+                  <div className="bubble" style={{ whiteSpace: 'pre-wrap' }}>{m.content}</div>
+                </div>
               </div>
-            </div>
-          );
-        }
-        if (m.type === 'result') {
-          return <ResultCard key={i} sql={m.sql} rows={m.rows} rowCount={m.rowCount} />;
-        }
-        if (m.type === 'write_warning') {
-          return (
-            <div key={i} className="msg bot">
-              <div className="msg-av bot-av">🤖</div>
-              <WriteWarning sql={m.sql} />
-            </div>
-          );
-        }
-        return (
-          <BotMessage
-            key={i}
-            content={typeof m.content === 'string' ? m.content : ''}
-            onChipSelect={onChipSelect}
-            chipsDisabled={chipsDisabled}
-          />
-        );
-      })}
+            );
+          } else if (m.type === 'result') {
+            els.push(<ResultCard key={i} sql={m.sql} rows={m.rows} rowCount={m.rowCount} />);
+            if (pendingLearnings) {
+              els.push(<LearningsWidget key={`learnings-${i}`} learnings={pendingLearnings} onComplete={onLearningsReviewed} />);
+              pendingLearnings = null;
+            }
+          } else if (m.type === 'write_warning') {
+            els.push(
+              <div key={i} className="msg bot">
+                <div className="msg-av bot-av">🤖</div>
+                <WriteWarning sql={m.sql} />
+              </div>
+            );
+          } else {
+            const parsed = parseMessage(typeof m.content === 'string' ? m.content : '');
+            if (parsed.learnings) {
+              pendingLearnings = parsed.learnings;
+            }
+            els.push(
+              <BotMessage
+                key={i}
+                content={typeof m.content === 'string' ? m.content : ''}
+                onChipSelect={onChipSelect}
+                chipsDisabled={chipsDisabled}
+              />
+            );
+            // If no result card follows, render learnings right after the text
+            const next = messages[i + 1];
+            if (pendingLearnings && (!next || next.type !== 'result')) {
+              els.push(<LearningsWidget key={`learnings-${i}`} learnings={pendingLearnings} onComplete={onLearningsReviewed} />);
+              pendingLearnings = null;
+            }
+          }
+          return els;
+        });
+      })()}
       {thinking && (
         <div className="msg bot">
           <div className="msg-av bot-av">🤖</div>

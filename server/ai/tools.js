@@ -129,7 +129,7 @@ async function executeTool(toolName, toolInput, context) {
       try {
         const result = await dbDriver.runSelect(slug, safeSql);
         emit({ type: 'print_result', sql: safeSql, rows: result.rows });
-        return { success: true, rowCount: result.rowCount };
+        return { success: true, rowCount: result.rowCount, rows: result.rows };
       } catch (err) {
         return { error: friendlyDbError(err) };
       }

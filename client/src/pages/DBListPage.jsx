@@ -136,7 +136,7 @@ export default function DBListPage({ config, models, onSelectDB, onModelChange, 
                 className={`db-card ${selected === db.slug ? 'selected' : ''}`}
                 onClick={() => {
                   setSelected(db.slug);
-                  if (db.status === 'online') onSelectDB(db);
+                  onSelectDB(db);
                 }}
               >
                 <div className="db-card-icon">{DB_TYPE_EMOJI[db.type] || '🗄️'}</div>
